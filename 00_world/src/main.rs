@@ -6,7 +6,7 @@ use std::sync::Arc;
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop, OwnedDisplayHandle},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
@@ -31,18 +31,19 @@ impl ApplicationHandler for App {
         );
 
         // --------------------------------------------------------------------------- create renderer
-        let renderer = pollster::block_on(Renderer::new(window.clone()));
-        self.renderer = Some(renderer);
+        self.renderer = Some(pollster::block_on(Renderer::new(window)).unwrap());
+
+        // --------------------------------------------------------------------------- init other fields
         self.time = 0.0;
         self.input = 0.0;
-
-        // --------------------------------------------------------------------------- redraw
-        window.request_redraw();
     }
 
     // ------------------------------------------------------------------------------- handle window events
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        let renderer = self.renderer.as_mut().unwrap();
+        let renderer = match &mut self.renderer {
+            Some(canvas) => canvas,
+            None => return,
+        };
 
         match event {
             // ----------------------------------------------------------------------- close window
@@ -50,16 +51,19 @@ impl ApplicationHandler for App {
                 println!("close requested; stopping");
                 event_loop.exit();
             }
-            // ----------------------------------------------------------------------- redraw
-            WindowEvent::RedrawRequested => {
-                renderer.render();
-            }
 
             // ----------------------------------------------------------------------- resize
-            WindowEvent::Resized(size) => {
-                // this event is always followed up by redraw request.
-                renderer.resize(size);
-            }
+            WindowEvent::Resized(size) => renderer.resize(size.width, size.height),
+
+            // ----------------------------------------------------------------------- redraw
+            WindowEvent::RedrawRequested => match renderer.render() {
+                Ok(_) => {}
+                Err(e) => {
+                    log::error!("{e}");
+                    event_loop.exit();
+                }
+            },
+
             // ----------------------------------------------------------------------- handle key inputs
             WindowEvent::KeyboardInput { event, .. } => {
                 if let PhysicalKey::Code(code) = event.physical_key
@@ -93,13 +97,15 @@ impl ApplicationHandler for App {
     }
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let event_loop = EventLoop::new().unwrap();
+    let event_loop = EventLoop::new()?;
 
     event_loop.set_control_flow(ControlFlow::Wait);
 
     let mut app = App::default();
     event_loop.run_app(&mut app).unwrap();
+
+    Ok(())
 }
