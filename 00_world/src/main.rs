@@ -20,7 +20,7 @@ use world::{Direction, Rect};
 #[derive(Default)]
 struct App {
     renderer: Option<Renderer>,
-    input: (Direction, Direction),
+    key_table: Box<[bool]>,
     rect: Option<Rect>,
 }
 
@@ -37,7 +37,7 @@ impl ApplicationHandler for App {
         self.renderer = Some(pollster::block_on(Renderer::new(window)).unwrap());
 
         // --------------------------------------------------------------------------- init other fields
-        self.input = (Direction::Still, Direction::Still);
+        self.key_table = vec![false; 255].into_boxed_slice(); //Before event loop
         self.rect = Some(Rect::new());
     }
 
@@ -69,22 +69,9 @@ impl ApplicationHandler for App {
 
             // ----------------------------------------------------------------------- handle key inputs
             WindowEvent::KeyboardInput { event, .. } => {
-                let mut direction_x: Direction = Direction::Still;
-                let mut direction_y: Direction = Direction::Still;
-
-                if let PhysicalKey::Code(code) = event.physical_key
-                    && event.state.is_pressed()
-                {
-                    match code {
-                        KeyCode::ArrowUp => direction_y = Direction::Up,
-                        KeyCode::ArrowDown => direction_y = Direction::Down,
-                        KeyCode::ArrowRight => direction_x = Direction::Right,
-                        KeyCode::ArrowLeft => direction_x = Direction::Left,
-                        _ => (),
-                    }
-                    self.input = (direction_x, direction_y);
+                if let PhysicalKey::Code(code) = event.physical_key {
+                    self.key_table[code as usize] = event.state.is_pressed();
                 }
-                // self.input = (Direction::Still, Direction::Still);
             }
 
             _ => (),
@@ -96,9 +83,27 @@ impl ApplicationHandler for App {
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         let renderer = self.renderer.as_mut().unwrap();
         let rect = self.rect.as_mut().unwrap();
+        let mut direction_x: Direction = Direction::Still;
+        let mut direction_y: Direction = Direction::Still;
 
-        let rect_pos = rect.update(self.input);
+        if self.key_table[KeyCode::ArrowLeft as usize] {
+            direction_x = Direction::Left
+        }
 
+        if self.key_table[KeyCode::ArrowRight as usize] {
+            direction_x = Direction::Right
+        }
+
+        if self.key_table[KeyCode::ArrowUp as usize] {
+            direction_y = Direction::Up
+        }
+
+        if self.key_table[KeyCode::ArrowDown as usize] {
+            direction_y = Direction::Down
+        }
+
+        let direction = (direction_x, direction_y);
+        let rect_pos = rect.update(direction);
         renderer.update(rect_pos);
         renderer.get_window().request_redraw()
     }
