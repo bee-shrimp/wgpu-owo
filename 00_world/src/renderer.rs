@@ -234,15 +234,15 @@ impl Renderer {
             ..Default::default()
         });
 
-        let sampler_linear = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::MipmapFilterMode::Linear,
-            ..Default::default()
-        });
+        // let sampler_linear = device.create_sampler(&wgpu::SamplerDescriptor {
+        //     address_mode_u: wgpu::AddressMode::ClampToEdge,
+        //     address_mode_v: wgpu::AddressMode::ClampToEdge,
+        //     address_mode_w: wgpu::AddressMode::ClampToEdge,
+        //     mag_filter: wgpu::FilterMode::Linear,
+        //     min_filter: wgpu::FilterMode::Linear,
+        //     mipmap_filter: wgpu::MipmapFilterMode::Linear,
+        //     ..Default::default()
+        // });
 
         // --------------------------------------------------------------------------- bind group w/ uniform buffer only
         let uniform_bind_group_layout =
@@ -300,7 +300,7 @@ impl Renderer {
             });
 
         // --------------------------------------------------------------------------- load image
-        let diffuse_bytes = include_bytes!("../img/sea_layer.png");
+        let diffuse_bytes = include_bytes!("../img/cloud.png");
 
         let diffuse_texture_view =
             create_diffuse_texture(&device, &queue, "diffuse texture", diffuse_bytes);
@@ -364,12 +364,6 @@ impl Renderer {
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
                 ],
             });
 
@@ -388,10 +382,6 @@ impl Renderer {
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::Sampler(&sampler_nearest),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: wgpu::BindingResource::Sampler(&sampler_linear),
                 },
             ],
         });
@@ -754,6 +744,7 @@ fn create_simple_bind_group(
 }
 
 // ----------------------------------------------------------------------------------- create bind group with uniform
+#[allow(unused)]
 fn create_effect_bind_group(
     device: &wgpu::Device,
     label: &str,
