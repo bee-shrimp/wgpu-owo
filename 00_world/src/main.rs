@@ -14,11 +14,14 @@ use winit::{
 mod renderer;
 use renderer::Renderer;
 
+mod world;
+use world::{Direction, Rect};
+
 #[derive(Default)]
 struct App {
     renderer: Option<Renderer>,
-    time: f32,
-    input: f32,
+    input: (Direction, Direction),
+    rect: Option<Rect>,
 }
 
 impl ApplicationHandler for App {
@@ -34,8 +37,8 @@ impl ApplicationHandler for App {
         self.renderer = Some(pollster::block_on(Renderer::new(window)).unwrap());
 
         // --------------------------------------------------------------------------- init other fields
-        self.time = 0.0;
-        self.input = 0.0;
+        self.input = (Direction::Still, Direction::Still);
+        self.rect = Some(Rect::new());
     }
 
     // ------------------------------------------------------------------------------- handle window events
@@ -66,19 +69,22 @@ impl ApplicationHandler for App {
 
             // ----------------------------------------------------------------------- handle key inputs
             WindowEvent::KeyboardInput { event, .. } => {
+                let mut direction_x: Direction = Direction::Still;
+                let mut direction_y: Direction = Direction::Still;
+
                 if let PhysicalKey::Code(code) = event.physical_key
                     && event.state.is_pressed()
                 {
                     match code {
-                        KeyCode::ArrowUp => {
-                            self.input += 0.1;
-                        }
-                        KeyCode::ArrowDown => {
-                            self.input -= 0.1;
-                        }
+                        KeyCode::ArrowUp => direction_y = Direction::Up,
+                        KeyCode::ArrowDown => direction_y = Direction::Down,
+                        KeyCode::ArrowRight => direction_x = Direction::Right,
+                        KeyCode::ArrowLeft => direction_x = Direction::Left,
                         _ => (),
                     }
+                    self.input = (direction_x, direction_y);
                 }
+                // self.input = (Direction::Still, Direction::Still);
             }
 
             _ => (),
@@ -89,10 +95,11 @@ impl ApplicationHandler for App {
     #[allow(unused_variables)]
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         let renderer = self.renderer.as_mut().unwrap();
+        let rect = self.rect.as_mut().unwrap();
 
-        self.time += 0.1;
-        renderer.update(self.time, self.input);
+        let rect_pos = rect.update(self.input);
 
+        renderer.update(rect_pos);
         renderer.get_window().request_redraw()
     }
 }
