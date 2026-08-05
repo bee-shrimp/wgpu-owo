@@ -1,11 +1,12 @@
 #![deny(clippy::all)]
 #![forbid(unsafe_code)]
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use winit::{
     application::ApplicationHandler,
-    event::WindowEvent,
+    event::{ElementState, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
@@ -17,15 +18,23 @@ use renderer::Renderer;
 mod world;
 use world::{Direction, Rect};
 
+// const TARGET_FPS: f64 = 30.0;
+// const FRAME_TIME: f64 = 1.0 / TARGET_FPS;
+
 #[derive(Default)]
 struct App {
     renderer: Option<Renderer>,
-    key_table: Box<[bool]>,
+    pressed_keys: HashSet<KeyCode>,
     rect: Option<Rect>,
+    // last_frame_time: Instant,
+    // next_frame_time: Instant,
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        // let time = Instant::now();
+        // self.last_frame_time: time,
+        // self.next_frame_time: time + Duration::from_secs_f64(FRAME_TIME),
         // --------------------------------------------------------------------------- create window object
         let window = Arc::new(
             event_loop
@@ -37,7 +46,6 @@ impl ApplicationHandler for App {
         self.renderer = Some(pollster::block_on(Renderer::new(window)).unwrap());
 
         // --------------------------------------------------------------------------- init other fields
-        self.key_table = vec![false; 255].into_boxed_slice(); //Before event loop
         self.rect = Some(Rect::new());
     }
 
@@ -68,11 +76,22 @@ impl ApplicationHandler for App {
             },
 
             // ----------------------------------------------------------------------- handle key inputs
-            WindowEvent::KeyboardInput { event, .. } => {
-                if let PhysicalKey::Code(code) = event.physical_key {
-                    self.key_table[code as usize] = event.state.is_pressed();
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        physical_key: PhysicalKey::Code(code),
+                        state,
+                        ..
+                    },
+                ..
+            } => match state {
+                ElementState::Pressed => {
+                    self.pressed_keys.insert(code);
                 }
-            }
+                ElementState::Released => {
+                    self.pressed_keys.remove(&code);
+                }
+            },
 
             _ => (),
         }
@@ -81,25 +100,39 @@ impl ApplicationHandler for App {
     // ------------------------------------------------------------------------------- things to do after everyting else
     #[allow(unused_variables)]
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        // let now = Instant::now();
+        // let dt = now.duration_since(self.last_frame_time).as_secs_f32();
+        // let gap = 1.0 / dt;
+        // println!("{:.2}", gap);
+
+        // self.next_frame_time += Duration::from_secs_f64(FRAME_TIME);
+        // if now < self.next_frame_time {
+        //     std::thread::sleep(self.next_frame_time - now);
+        // } else {
+        //     self.next_frame_time = now
+        // }
+        // self.last_frame_time = now;
+
         let renderer = self.renderer.as_mut().unwrap();
         let rect = self.rect.as_mut().unwrap();
         let mut direction_x: Direction = Direction::Still;
         let mut direction_y: Direction = Direction::Still;
 
-        if self.key_table[KeyCode::ArrowLeft as usize] {
-            direction_x = Direction::Left
-        }
+        let keys = &self.pressed_keys;
 
-        if self.key_table[KeyCode::ArrowRight as usize] {
-            direction_x = Direction::Right
-        }
-
-        if self.key_table[KeyCode::ArrowUp as usize] {
+        if keys.contains(&KeyCode::ArrowUp) {
             direction_y = Direction::Up
         }
 
-        if self.key_table[KeyCode::ArrowDown as usize] {
+        if keys.contains(&KeyCode::ArrowLeft) {
+            direction_x = Direction::Left
+        }
+        if keys.contains(&KeyCode::ArrowDown) {
             direction_y = Direction::Down
+        }
+
+        if keys.contains(&KeyCode::ArrowRight) {
+            direction_x = Direction::Right
         }
 
         let direction = (direction_x, direction_y);
