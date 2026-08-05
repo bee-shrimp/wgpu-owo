@@ -18,3 +18,11 @@ wgpu = "30.0"
 bytemuck = { version = "1.25", features = [ "derive" ] }
 glam = "0.33"
 image = {version = "0.25", features = ["png","jpeg"]}
+
+# [profile.release]
+# opt-level="s"
+# debug=false
+# lto="thin"
+# panic="abort"
+# codegen-units=1
+# strip="symbols"

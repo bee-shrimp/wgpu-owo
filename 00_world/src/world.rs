@@ -10,10 +10,11 @@ impl Rect {
         Self {
             pos_x: 0.0,
             pos_y: 0.0,
-            speed: 0.01,
+            speed: 1.0,
         }
     }
-    pub fn update(&mut self, dir: (Direction, Direction)) -> (f32, f32) {
+    pub fn update(&mut self, dt: f32, dir: (Direction, Direction)) -> (f32, f32) {
+        let dt = if dt >= 0.1 { 0.1 } else { dt };
         let dir_x = match dir.0 {
             Direction::Left => -1.0,
             Direction::Right => 1.0,
@@ -24,8 +25,8 @@ impl Rect {
             Direction::Up => 1.0,
             _ => 0.0,
         };
-        self.pos_x += dir_x * self.speed;
-        self.pos_y += dir_y * self.speed;
+        self.pos_x += dir_x * self.speed * dt;
+        self.pos_y += dir_y * self.speed * dt;
         (self.pos_x, self.pos_y)
     }
 }
