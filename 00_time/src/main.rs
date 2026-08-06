@@ -3,8 +3,9 @@
 
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
+use anyhow::Context;
 use winit::{
     application::ApplicationHandler,
     event::{ElementState, KeyEvent, WindowEvent},
@@ -17,11 +18,9 @@ mod renderer;
 use renderer::Renderer;
 
 mod world;
-use world::{Direction, Pos, World};
+use world::{Direction, Directions, Pos, World};
 
-const TARGET_FPS: f64 = 60.0;
-const FRAME_TIME: f64 = 1.0 / TARGET_FPS;
-const EPSILON: f32 = 0.01;
+const EPSILON: f32 = 0.001;
 
 #[derive(Default)]
 struct App {
@@ -29,7 +28,6 @@ struct App {
     world: World,
     pressed_keys: HashSet<KeyCode>,
     last_frame_time: Option<Instant>,
-    next_frame_time: Option<Instant>,
     last_draw_data: Pos,
     need_redraw: bool,
 }
@@ -40,18 +38,18 @@ impl ApplicationHandler for App {
         let window = Arc::new(
             event_loop
                 .create_window(Window::default_attributes())
-                .unwrap(),
+                .expect("failed to create window"),
         );
 
         // --------------------------------------------------------------------------- create renderer
-        self.renderer = Some(pollster::block_on(Renderer::new(window)).unwrap());
+        self.renderer =
+            Some(pollster::block_on(Renderer::new(window)).expect("failed to create renderer"));
 
         // --------------------------------------------------------------------------- init other fields
         self.world = World::new();
 
         let time = Instant::now();
         self.last_frame_time = Some(time);
-        self.next_frame_time = Some(time + Duration::from_secs_f64(FRAME_TIME));
         self.last_draw_data = Pos::default();
         self.need_redraw = true;
     }
@@ -113,22 +111,13 @@ impl ApplicationHandler for App {
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         // --------------------------------------------------------------------------- time related
         let now = Instant::now();
-        let dt: f32;
-        if let Some(last) = self.last_frame_time {
-            dt = now.duration_since(last).as_secs_f32()
+        let dt = if let Some(last) = self.last_frame_time {
+            now.duration_since(last).as_secs_f32().min(0.1)
         } else {
-            dt = 0.1
+            0.1
         };
-        // let gap = 1.0 / dt; //fps
-        // println!("{:.2}", gap);
 
-        let mut next = self.next_frame_time.unwrap();
-        next += Duration::from_secs_f64(FRAME_TIME);
-        if now < next {
-            std::thread::sleep(next - now);
-        } else {
-            self.next_frame_time = Some(now)
-        }
+        println!("dt {:.2}", dt);
         self.last_frame_time = Some(now);
 
         // --------------------------------------------------------------------------- return if paused or no input
@@ -154,7 +143,7 @@ impl ApplicationHandler for App {
 
         // --------------------------------------------------------------------------- update
         let direction = keys_to_direction(keys);
-        self.world = self.world.update(dt, direction);
+        self.world.update(dt, direction);
 
         let rect_pos = self.world.get_rect_pos();
 
@@ -170,7 +159,7 @@ impl ApplicationHandler for App {
     }
 }
 
-fn keys_to_direction(keys: &HashSet<KeyCode>) -> (Direction, Direction) {
+fn keys_to_direction(keys: &HashSet<KeyCode>) -> Directions {
     let mut direction_x: Direction = Direction::Still;
     let mut direction_y: Direction = Direction::Still;
 
@@ -189,7 +178,10 @@ fn keys_to_direction(keys: &HashSet<KeyCode>) -> (Direction, Direction) {
         direction_x = Direction::Right
     }
 
-    (direction_x, direction_y)
+    Directions {
+        x: direction_x,
+        y: direction_y,
+    }
 }
 
 fn has_moved(last_draw_data: &Pos, pos: &Pos) -> bool {
@@ -202,12 +194,12 @@ fn has_moved(last_draw_data: &Pos, pos: &Pos) -> bool {
 fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let event_loop = EventLoop::new()?;
+    let event_loop = EventLoop::new().context("failed to create event loop")?;
 
     event_loop.set_control_flow(ControlFlow::Wait);
 
     let mut app = App::default();
-    event_loop.run_app(&mut app).unwrap();
+    event_loop.run_app(&mut app).context("failed to run app")?;
 
     Ok(())
 }

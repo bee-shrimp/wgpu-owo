@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::borrow::Cow;
 use std::mem;
 use wgpu::util::DeviceExt;
@@ -134,7 +135,9 @@ impl Renderer {
         });
 
         // --------------------------------------------------------------------------- surface to draw onto
-        let surface = instance.create_surface(window.clone()).unwrap();
+        let surface = instance
+            .create_surface(window.clone())
+            .context("failed to create surface")?;
 
         // --------------------------------------------------------------------------- physical device
         let adapter = instance
@@ -145,7 +148,7 @@ impl Renderer {
                 apply_limit_buckets: true,
             })
             .await
-            .unwrap();
+            .context("failed to request addapter")?;
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -154,6 +157,7 @@ impl Renderer {
             .copied()
             .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
+
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
@@ -170,7 +174,7 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor::default())
             .await
-            .unwrap();
+            .context("failed to create device")?;
 
         // --------------------------------------------------------------------------- load shaders
         let base_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -488,8 +492,6 @@ impl Renderer {
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
-        self.window.request_redraw();
-
         // can't render unless the surface is configured
         if !self.is_surface_configured {
             return Ok(());
@@ -671,12 +673,12 @@ fn create_diffuse_texture(
     let image = image::load_from_memory(diffuse_bytes).unwrap();
 
     let diffuse_rgba = image.to_rgba8();
-    let dimentions = image.dimensions();
+    let dimensions = image.dimensions();
 
     // ------------------------------------------------------------------------------- create texture
     let diffuse_texture_size = wgpu::Extent3d {
-        width: dimentions.0,
-        height: dimentions.1,
+        width: dimensions.0,
+        height: dimensions.1,
         depth_or_array_layers: 1,
     };
 
@@ -702,8 +704,8 @@ fn create_diffuse_texture(
         &diffuse_rgba,
         wgpu::TexelCopyBufferLayout {
             offset: 0,
-            bytes_per_row: Some(4 * dimentions.0),
-            rows_per_image: Some(dimentions.1),
+            bytes_per_row: Some(4 * dimensions.0),
+            rows_per_image: Some(dimensions.1),
         },
         diffuse_texture_size,
     );

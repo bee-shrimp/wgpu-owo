@@ -9,6 +9,12 @@ pub enum Direction {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct Directions {
+    pub x: Direction,
+    pub y: Direction,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct Pos {
     pub x: f32,
     pub y: f32,
@@ -42,26 +48,19 @@ impl Rect {
             speed: 1.0,
         }
     }
-    fn update(&self, dt: f32, dir: (Direction, Direction)) -> Self {
-        let dt = if dt >= 0.1 { 0.1 } else { dt };
-        let dir_x = match dir.0 {
+    fn update(&mut self, dt: f32, dir: Directions) {
+        let dir_x = match dir.x {
             Direction::Left => -1.0,
             Direction::Right => 1.0,
             _ => 0.0,
         };
-        let dir_y = match dir.1 {
+        let dir_y = match dir.y {
             Direction::Down => -1.0,
             Direction::Up => 1.0,
             _ => 0.0,
         };
-        let x = self.pos.x + dir_x * self.speed * dt;
-        let y = self.pos.y + dir_y * self.speed * dt;
-        let speed = self.speed;
-
-        Self {
-            pos: Pos { x, y },
-            speed,
-        }
+        self.pos.x += dir_x * self.speed * dt;
+        self.pos.y += dir_y * self.speed * dt;
     }
 }
 
@@ -88,15 +87,10 @@ impl World {
             is_running: true,
         }
     }
-    pub fn update(&self, dt: f32, dir: (Direction, Direction)) -> Self {
-        let new_rect = self.rect.update(dt, dir);
-        let is_running = self.is_running;
-
-        Self {
-            rect: new_rect,
-            is_running,
-        }
+    pub fn update(&mut self, dt: f32, dir: Directions) {
+        self.rect.update(dt, dir);
     }
+
     pub fn toggle_running(&self) -> Self {
         Self {
             rect: self.rect,
