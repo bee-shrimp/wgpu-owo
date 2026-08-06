@@ -18,12 +18,12 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(
-    model: VertexInput,
+    in: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
 
-    out.position = vec4<f32>(model.position.xy, 0.0, 1.0);
-    out.uv = model.uv;
+    out.position = vec4<f32>(in.position.xy, 0.0, 1.0);
+    out.uv = in.uv;
     return out;
 }
 

@@ -23,7 +23,7 @@ struct Size {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Uniforms {
-    pub model_matricx: [[f32; 4]; 4],
+    pub model_matrix: [[f32; 4]; 4],
 }
 
 // ----------------------------------------------------------------------------------- struct for vertex buffer
@@ -194,7 +194,7 @@ impl Renderer {
 
         // --------------------------------------------------------------------------- uniform buffer
         let initial_uniforms = Uniforms {
-            model_matricx: Mat4::IDENTITY.to_cols_array_2d(),
+            model_matrix: Mat4::IDENTITY.to_cols_array_2d(),
         };
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -656,7 +656,7 @@ impl Renderer {
             &self.uniform_buffer,
             0,
             bytemuck::cast_slice(&[Uniforms {
-                model_matricx: model.to_cols_array_2d(),
+                model_matrix: model.to_cols_array_2d(),
             }]),
         );
     }
