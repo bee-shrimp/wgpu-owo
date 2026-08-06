@@ -1,7 +1,8 @@
 [workspace]
-members = ["00_world"]
+members = ["00_time"]
 
 resolver = "3"
+
 # [profile.release]
 # opt-level="s"
 # debug=false
