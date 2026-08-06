@@ -1,0 +1,20 @@
+[package]
+name = "space"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "01_space"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+env_logger = "0.11"
+log = "0.4"
+pollster = "1.0"
+
+winit = "0.30"
+wgpu = "30.0"
+bytemuck = { version = "1.25", features = [ "derive" ] }
+glam = "0.33"
+image = {version = "0.25", features = ["png","jpeg"]}
