@@ -1,5 +1,5 @@
 [workspace]
-members = ["00_time"]
+members = ["00_time", "01_space"]
 
 resolver = "3"
 

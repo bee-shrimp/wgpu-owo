@@ -30,4 +30,15 @@ reference:
 
 [Learn Wgpu](https://sotrh.github.io/learn-wgpu/)
 
+## 01_space  
 
+what it does:  
+
+- same as 00_time.  
+- except the world coord is not NDC now.  
+
+how it works:  
+
+- world uses logical coord (x: 0 to LOGIC_WIDTH,y : 0 to LOGIC_HEIGHT).  
+- uniform buffer has matrices needed for converting coord to NDC.  
+- shader calculates movement and NDC with the matrices.  
