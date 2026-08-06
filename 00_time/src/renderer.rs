@@ -3,8 +3,7 @@ use std::borrow::Cow;
 use std::mem;
 use wgpu::util::DeviceExt;
 
-use crate::Arc;
-use crate::Window;
+use crate::{Arc, Pos, Window};
 
 use glam::{Mat4, Vec3};
 use image::GenericImageView;
@@ -648,9 +647,9 @@ impl Renderer {
     }
 
     // ------------------------------------------------------------------------------- update uniform buffer
-    pub fn update(&self, direction: (f32, f32)) {
+    pub fn update(&self, pos: Pos) {
         let mut model = Mat4::IDENTITY;
-        model *= Mat4::from_translation(Vec3::new(direction.0, direction.1, 0.0));
+        model *= Mat4::from_translation(Vec3::new(pos.x, pos.y, 0.0));
 
         self.queue.write_buffer(
             &self.uniform_buffer,

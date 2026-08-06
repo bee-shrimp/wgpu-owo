@@ -151,7 +151,7 @@ impl ApplicationHandler for App {
             self.need_redraw = true;
             self.last_draw_data = rect_pos;
             let renderer = self.renderer.as_mut().unwrap();
-            renderer.update((rect_pos.x, rect_pos.y));
+            renderer.update(rect_pos);
             renderer.get_window().request_redraw()
         } else {
             self.need_redraw = false;
