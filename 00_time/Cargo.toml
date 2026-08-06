@@ -1,10 +1,10 @@
 [package]
-name = "world"
+name = "time"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "00_world"
+name = "00_time"
 path = "src/main.rs"
 
 [dependencies]

@@ -342,7 +342,6 @@ impl Renderer {
                 height: LOGIC_HEIGHT,
             },
         );
-
         let mid_bind_group = create_effect_bind_group(
             &device,
             "mid bind group",

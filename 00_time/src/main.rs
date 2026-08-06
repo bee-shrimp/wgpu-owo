@@ -17,30 +17,25 @@ mod renderer;
 use renderer::Renderer;
 
 mod world;
-use world::{Direction, Rect};
+use world::{Direction, Pos, World};
 
 const TARGET_FPS: f64 = 60.0;
 const FRAME_TIME: f64 = 1.0 / TARGET_FPS;
-const EPSILON: f32 = 0.001;
+const EPSILON: f32 = 0.01;
 
 #[derive(Default)]
 struct App {
     renderer: Option<Renderer>,
+    world: World,
     pressed_keys: HashSet<KeyCode>,
-    rect: Option<Rect>,
     last_frame_time: Option<Instant>,
     next_frame_time: Option<Instant>,
-    last_draw_data: (f32, f32),
+    last_draw_data: Pos,
     need_redraw: bool,
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let time = Instant::now();
-        self.last_frame_time = Some(time);
-        self.next_frame_time = Some(time + Duration::from_secs_f64(FRAME_TIME));
-        self.last_draw_data = (0.0, 0.0);
-        self.need_redraw = true;
         // --------------------------------------------------------------------------- create window object
         let window = Arc::new(
             event_loop
@@ -52,7 +47,13 @@ impl ApplicationHandler for App {
         self.renderer = Some(pollster::block_on(Renderer::new(window)).unwrap());
 
         // --------------------------------------------------------------------------- init other fields
-        self.rect = Some(Rect::new());
+        self.world = World::new();
+
+        let time = Instant::now();
+        self.last_frame_time = Some(time);
+        self.next_frame_time = Some(time + Duration::from_secs_f64(FRAME_TIME));
+        self.last_draw_data = Pos::default();
+        self.need_redraw = true;
     }
 
     // ------------------------------------------------------------------------------- handle window events
@@ -110,15 +111,18 @@ impl ApplicationHandler for App {
     // ------------------------------------------------------------------------------- things to do after everyting else
     #[allow(unused_variables)]
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        // --------------------------------------------------------------------------- time related
         let now = Instant::now();
-        let last = self.last_frame_time.unwrap();
-        let mut next = self.next_frame_time.unwrap();
-
-        let dt = now.duration_since(last).as_secs_f32();
-
-        let gap = 1.0 / dt; //fps
+        let dt: f32;
+        if let Some(last) = self.last_frame_time {
+            dt = now.duration_since(last).as_secs_f32()
+        } else {
+            dt = 0.1
+        };
+        // let gap = 1.0 / dt; //fps
         // println!("{:.2}", gap);
 
+        let mut next = self.next_frame_time.unwrap();
         next += Duration::from_secs_f64(FRAME_TIME);
         if now < next {
             std::thread::sleep(next - now);
@@ -127,46 +131,72 @@ impl ApplicationHandler for App {
         }
         self.last_frame_time = Some(now);
 
+        // --------------------------------------------------------------------------- return if paused or no input
         let keys = &self.pressed_keys;
+
         if keys.is_empty() {
-            self.need_redraw = false
-        } else {
+            self.need_redraw = false;
+            return;
+        }
+
+        if !self.world.is_running() && !keys.contains(&KeyCode::Space) {
+            return;
+        }
+
+        if keys.contains(&KeyCode::Space) {
+            self.world = self.world.toggle_running();
+            return;
+        }
+
+        if !self.world.is_running() {
+            return;
+        }
+
+        // --------------------------------------------------------------------------- update
+        let direction = keys_to_direction(keys);
+        self.world = self.world.update(dt, direction);
+
+        let rect_pos = self.world.get_rect_pos();
+
+        if has_moved(&self.last_draw_data, &rect_pos) {
+            self.need_redraw = true;
+            self.last_draw_data = rect_pos;
             let renderer = self.renderer.as_mut().unwrap();
-            let rect = self.rect.as_mut().unwrap();
-            let mut direction_x: Direction = Direction::Still;
-            let mut direction_y: Direction = Direction::Still;
-
-            if keys.contains(&KeyCode::ArrowUp) {
-                direction_y = Direction::Up
-            }
-
-            if keys.contains(&KeyCode::ArrowLeft) {
-                direction_x = Direction::Left
-            }
-            if keys.contains(&KeyCode::ArrowDown) {
-                direction_y = Direction::Down
-            }
-
-            if keys.contains(&KeyCode::ArrowRight) {
-                direction_x = Direction::Right
-            }
-
-            let direction = (direction_x, direction_y);
-            let rect_pos = rect.update(dt, direction);
-
-            let x_dist = self.last_draw_data.0 - rect_pos.0;
-            let y_dist = self.last_draw_data.1 - rect_pos.1;
-
-            if x_dist.abs() >= EPSILON || y_dist.abs() >= EPSILON {
-                self.need_redraw = true;
-                self.last_draw_data = rect_pos;
-                renderer.update(rect_pos);
-                renderer.get_window().request_redraw()
-            } else {
-                self.need_redraw = false;
-            }
+            renderer.update((rect_pos.x, rect_pos.y));
+            renderer.get_window().request_redraw()
+        } else {
+            self.need_redraw = false;
         }
     }
+}
+
+fn keys_to_direction(keys: &HashSet<KeyCode>) -> (Direction, Direction) {
+    let mut direction_x: Direction = Direction::Still;
+    let mut direction_y: Direction = Direction::Still;
+
+    if keys.contains(&KeyCode::ArrowUp) {
+        direction_y = Direction::Up
+    }
+
+    if keys.contains(&KeyCode::ArrowLeft) {
+        direction_x = Direction::Left
+    }
+    if keys.contains(&KeyCode::ArrowDown) {
+        direction_y = Direction::Down
+    }
+
+    if keys.contains(&KeyCode::ArrowRight) {
+        direction_x = Direction::Right
+    }
+
+    (direction_x, direction_y)
+}
+
+fn has_moved(last_draw_data: &Pos, pos: &Pos) -> bool {
+    let x_dist = last_draw_data.x - pos.x;
+    let y_dist = last_draw_data.y - pos.y;
+
+    x_dist.abs() >= EPSILON || y_dist.abs() >= EPSILON
 }
 
 fn main() -> anyhow::Result<()> {
