@@ -2,6 +2,7 @@ use anyhow::Context;
 use std::borrow::Cow;
 use std::mem;
 use wgpu::util::DeviceExt;
+use winit::event_loop::ActiveEventLoop;
 
 use crate::{Arc, Pos, Window};
 
@@ -119,18 +120,20 @@ pub struct Renderer {
 
 // ----------------------------------------------------------------------------------- renderer state
 impl Renderer {
-    pub async fn new(window: Arc<Window>) -> anyhow::Result<Renderer> {
+    pub async fn new(
+        window: Arc<Window>,
+        event_loop: &ActiveEventLoop,
+    ) -> anyhow::Result<Renderer> {
         // --------------------------------------------------------------------------- size of window
         let size = window.inner_size();
 
         // --------------------------------------------------------------------------- create a new wgpu instance
-        // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
+            backends: wgpu::Backends::GL,
             flags: Default::default(),
             memory_budget_thresholds: Default::default(),
             backend_options: Default::default(),
-            display: None,
+            display: Some(Box::new(event_loop.owned_display_handle())),
         });
 
         // --------------------------------------------------------------------------- surface to draw onto
@@ -142,12 +145,14 @@ impl Renderer {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
-                compatible_surface: Some(&surface),
+                compatible_surface: None,
                 force_fallback_adapter: false,
                 apply_limit_buckets: true,
             })
             .await
             .context("failed to request addapter")?;
+
+        println!("adapter info: {:?}", adapter.get_info());
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps

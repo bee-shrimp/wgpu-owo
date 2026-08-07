@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -42,8 +42,10 @@ impl ApplicationHandler for App {
         );
 
         // --------------------------------------------------------------------------- create renderer
-        self.renderer =
-            Some(pollster::block_on(Renderer::new(window)).expect("failed to create renderer"));
+        self.renderer = Some(
+            pollster::block_on(Renderer::new(window, event_loop))
+                .expect("failed to create renderer"),
+        );
 
         // --------------------------------------------------------------------------- init other fields
         self.world = World::new();
@@ -117,11 +119,14 @@ impl ApplicationHandler for App {
             0.1
         };
 
-        println!("dt {:.2}", dt);
+        // println!("dt {:.2}", dt);
         self.last_frame_time = Some(now);
 
         // --------------------------------------------------------------------------- return if paused or no input
         let keys = &self.pressed_keys;
+        if keys.contains(&KeyCode::KeyQ) {
+            event_loop.exit();
+        }
 
         if keys.is_empty() {
             self.need_redraw = false;
