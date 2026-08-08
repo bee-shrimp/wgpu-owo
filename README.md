@@ -16,6 +16,7 @@ what i did:
 - read the new version of learn-wgpu.  
 - update with new api (wgpu 30.0).  
 - update with better error handling.  
+- changed to gl backend.  
 - add delta time.  
 - add world struct.  
 - add pause by adding is_running field to World.  
