@@ -26,7 +26,6 @@ what i learnt:
 
 - my previous code was quite messy.  
 
-
 reference:  
 
 [Learn Wgpu](https://sotrh.github.io/learn-wgpu/)
@@ -35,11 +34,17 @@ reference:
 
 what it does:  
 
-- same as 00_time.  
+- similar to square from wgpu-uwu.  
 - except the world coord is not NDC now.  
 
 how it works:  
 
-- world uses logical coord (x: 0 to LOGIC_WIDTH,y : 0 to LOGIC_HEIGHT).  
-- uniform buffer has matrices needed for converting coord to NDC.  
+- world uses logical coord (x: 0 to LOGIC_WIDTH, y : 0 to LOGIC_HEIGHT).  
+- uniform buffer has projection_matrix.  
 - shader calculates movement and NDC with the matrices.  
+- (projection \* model \* position)
+- also, InputHandler is added to handle inputs.  
+
+what i learnt:  
+
+- pixel coord is much easier to work with.  

@@ -2455,7 +2455,6 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "glam",
- "image",
  "log",
  "pollster",
  "wgpu",
