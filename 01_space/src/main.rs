@@ -53,6 +53,9 @@ impl ApplicationHandler for App {
         let time = Instant::now();
         self.last_frame_time = Some(time);
         self.last_draw_data = Pos::default();
+
+        self.renderer.as_mut().unwrap().update(Pos::default());
+
         self.need_redraw = true;
     }
 

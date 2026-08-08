@@ -1,7 +1,9 @@
 pub const RECT_SIZE: u32 = 50;
 const RECT_SPEED: f32 = 60.0;
 
-use crate::renderer;
+// ----------------------------------------------------------------------------------- logical size of pixel art
+pub const LOGIC_WIDTH: u32 = 320;
+pub const LOGIC_HEIGHT: u32 = 240;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Direction {
@@ -28,8 +30,8 @@ pub struct Pos {
 impl Default for Pos {
     fn default() -> Self {
         Self {
-            x: (renderer::LOGIC_WIDTH / 2 - RECT_SIZE / 2) as f32,
-            y: (renderer::LOGIC_HEIGHT / 2 - RECT_SIZE / 2) as f32,
+            x: (LOGIC_WIDTH / 2 - RECT_SIZE / 2) as f32,
+            y: (LOGIC_HEIGHT / 2 - RECT_SIZE / 2) as f32,
         }
     }
 }

@@ -3,10 +3,6 @@ struct Uniforms {
     projection_matrix: mat4x4<f32>};
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1)
-var diffuse_texture: texture_2d<f32>;
-@group(0) @binding(2)
-var sampler_nearest: sampler;
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
@@ -32,7 +28,7 @@ fn vs_main(
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var uv = in.uv;
 
-    let colour = textureSample(diffuse_texture, sampler_nearest, in.uv);
+    let colour = vec4<f32>(0.6, 0.2, 0.4, 1.0);
 
     return vec4(colour);
 }
