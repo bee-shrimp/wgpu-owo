@@ -1,25 +1,16 @@
+// ------------------------------------------------------------------- imports
+
+use crate::input::{Direction, Directions};
+
+// ------------------------------------------------------------------- consts for rect
+
 pub const RECT_SIZE: u32 = 50;
 const RECT_SPEED: f32 = 60.0;
 
-// ----------------------------------------------------------------------------------- logical size of pixel art
+// ------------------------------------------------------------------- logical size of pixel art
+
 pub const LOGIC_WIDTH: u32 = 320;
 pub const LOGIC_HEIGHT: u32 = 240;
-
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-    #[default]
-    Still,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Directions {
-    pub x: Direction,
-    pub y: Direction,
-}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pos {
@@ -35,6 +26,8 @@ impl Default for Pos {
         }
     }
 }
+
+// ------------------------------------------------------------------- rect struct
 
 #[derive(Debug, Clone, Copy)]
 struct Rect {
@@ -74,6 +67,8 @@ impl Rect {
     }
 }
 
+// ------------------------------------------------------------------- world struct
+
 pub struct World {
     rect: Rect,
     is_running: bool,
@@ -97,6 +92,7 @@ impl World {
             is_running: true,
         }
     }
+
     pub fn update(&mut self, dt: f32, dir: Directions) {
         self.rect.update(dt, dir);
     }
@@ -107,6 +103,7 @@ impl World {
             is_running: !self.is_running,
         }
     }
+
     pub fn is_running(&self) -> bool {
         self.is_running
     }

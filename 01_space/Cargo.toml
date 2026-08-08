@@ -17,4 +17,3 @@ winit = "0.30"
 wgpu = "30.0"
 bytemuck = { version = "1.25", features = [ "derive" ] }
 glam = "0.33"
-image = {version = "0.25", features = ["png","jpeg"]}

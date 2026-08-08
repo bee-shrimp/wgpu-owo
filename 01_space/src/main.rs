@@ -1,7 +1,8 @@
 #![deny(clippy::all)]
-// #![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 
-use std::collections::HashSet;
+// ------------------------------------------------------------------- imports
+
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -18,15 +19,22 @@ mod renderer;
 use renderer::Renderer;
 
 mod world;
-use world::{Direction, Directions, Pos, World};
+use world::{Pos, World};
+
+mod input;
+use input::InputHandler;
+
+// ------------------------------------------------------------------- consts
 
 const EPSILON: f32 = 0.001;
+
+// ------------------------------------------------------------------- App struct
 
 #[derive(Default)]
 struct App {
     renderer: Option<Renderer>,
     world: World,
-    pressed_keys: HashSet<KeyCode>,
+    input: InputHandler,
     last_frame_time: Option<Instant>,
     last_draw_data: Pos,
     need_redraw: bool,
@@ -34,24 +42,28 @@ struct App {
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        // --------------------------------------------------------------------------- create window object
+        // ----------------------------------------------------------- create window object
+
         let window = Arc::new(
             event_loop
                 .create_window(Window::default_attributes())
                 .expect("failed to create window"),
         );
 
-        // --------------------------------------------------------------------------- create renderer
+        // ----------------------------------------------------------- create renderer
+
         self.renderer = Some(
             pollster::block_on(Renderer::new(window, event_loop))
                 .expect("failed to create renderer"),
         );
 
-        // --------------------------------------------------------------------------- init other fields
-        self.world = World::new();
+        // ----------------------------------------------------------- init other fields
 
-        let time = Instant::now();
-        self.last_frame_time = Some(time);
+        self.world = World::new();
+        self.input = InputHandler::new();
+
+        self.last_frame_time = Some(Instant::now());
+
         self.last_draw_data = Pos::default();
 
         self.renderer.as_mut().unwrap().update(Pos::default());
@@ -59,7 +71,8 @@ impl ApplicationHandler for App {
         self.need_redraw = true;
     }
 
-    // ------------------------------------------------------------------------------- handle window events
+    // --------------------------------------------------------------- handle window events
+
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         let renderer = match &mut self.renderer {
             Some(canvas) => canvas,
@@ -67,16 +80,19 @@ impl ApplicationHandler for App {
         };
 
         match event {
-            // ----------------------------------------------------------------------- close window
+            // ------------------------------------------------------- close window
+            //
             WindowEvent::CloseRequested => {
                 println!("close requested; stopping");
                 event_loop.exit();
             }
 
-            // ----------------------------------------------------------------------- resize
+            // ------------------------------------------------------- resize
+            //
             WindowEvent::Resized(size) => renderer.resize(size.width, size.height),
 
-            // ----------------------------------------------------------------------- redraw
+            // ------------------------------------------------------- redraw
+            //
             WindowEvent::RedrawRequested => {
                 if self.need_redraw {
                     match renderer.render() {
@@ -89,7 +105,8 @@ impl ApplicationHandler for App {
                 }
             }
 
-            // ----------------------------------------------------------------------- handle key inputs
+            // ------------------------------------------------------- handle key inputs
+            //
             WindowEvent::KeyboardInput {
                 event:
                     KeyEvent {
@@ -100,10 +117,10 @@ impl ApplicationHandler for App {
                 ..
             } => match state {
                 ElementState::Pressed => {
-                    self.pressed_keys.insert(code);
+                    self.input.insert(code);
                 }
                 ElementState::Released => {
-                    self.pressed_keys.remove(&code);
+                    self.input.remove(&code);
                 }
             },
 
@@ -111,10 +128,12 @@ impl ApplicationHandler for App {
         }
     }
 
-    // ------------------------------------------------------------------------------- things to do after everyting else
-    #[allow(unused_variables)]
+    // --------------------------------------------------------------- things to do after everyting else
+
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        // --------------------------------------------------------------------------- time related
+        //
+        // ----------------------------------------------------------- dt
+
         let now = Instant::now();
         let dt = if let Some(last) = self.last_frame_time {
             now.duration_since(last).as_secs_f32().min(0.1)
@@ -122,11 +141,12 @@ impl ApplicationHandler for App {
             0.1
         };
 
-        // println!("dt {:.2}", dt);
         self.last_frame_time = Some(now);
 
-        // --------------------------------------------------------------------------- return if paused or no input
-        let keys = &self.pressed_keys;
+        // ----------------------------------------------------------- return if paused or no input
+
+        let keys = self.input.get_pressed_keys();
+
         if keys.contains(&KeyCode::KeyQ) {
             event_loop.exit();
         }
@@ -149,9 +169,10 @@ impl ApplicationHandler for App {
             return;
         }
 
-        // --------------------------------------------------------------------------- update
-        let direction = keys_to_direction(keys);
-        self.world.update(dt, direction);
+        // ----------------------------------------------------------- update
+
+        let directions = self.input.get_directions();
+        self.world.update(dt, directions);
 
         let rect_pos = self.world.get_rect_pos();
 
@@ -167,30 +188,7 @@ impl ApplicationHandler for App {
     }
 }
 
-fn keys_to_direction(keys: &HashSet<KeyCode>) -> Directions {
-    let mut direction_x: Direction = Direction::Still;
-    let mut direction_y: Direction = Direction::Still;
-
-    if keys.contains(&KeyCode::ArrowUp) {
-        direction_y = Direction::Up
-    }
-
-    if keys.contains(&KeyCode::ArrowLeft) {
-        direction_x = Direction::Left
-    }
-    if keys.contains(&KeyCode::ArrowDown) {
-        direction_y = Direction::Down
-    }
-
-    if keys.contains(&KeyCode::ArrowRight) {
-        direction_x = Direction::Right
-    }
-
-    Directions {
-        x: direction_x,
-        y: direction_y,
-    }
-}
+// ------------------------------------------------------------------- check if redraw is needed
 
 fn has_moved(last_draw_data: &Pos, pos: &Pos) -> bool {
     let x_dist = last_draw_data.x - pos.x;
@@ -198,6 +196,8 @@ fn has_moved(last_draw_data: &Pos, pos: &Pos) -> bool {
 
     x_dist.abs() >= EPSILON || y_dist.abs() >= EPSILON
 }
+
+// ------------------------------------------------------------------- main
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
