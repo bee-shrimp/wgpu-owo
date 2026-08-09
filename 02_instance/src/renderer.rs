@@ -44,29 +44,6 @@ struct Vertex {
     uv: [f32; 2],
 }
 
-// ------------------------------------------------------------------- vertices to draw a rectangle
-
-const RECT_VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [0.0, 0.0],
-        uv: [0.0, 0.0], // top left
-    },
-    Vertex {
-        position: [0.0, RECT_SIZE as f32],
-        uv: [0.0, 1.0], // bottom left
-    },
-    Vertex {
-        position: [RECT_SIZE as f32, 0.0],
-        uv: [1.0, 0.0], // top right
-    },
-    Vertex {
-        position: [RECT_SIZE as f32, RECT_SIZE as f32],
-        uv: [1.0, 1.0], // bottom right
-    },
-];
-
-const RECT_INDICES: &[u16] = &[0, 1, 2, /**/ 1, 3, 2];
-
 // ------------------------------------------------------------------- descriptor for VertexBufferLayout
 
 impl Vertex {
@@ -100,6 +77,55 @@ const FULLSCREEN_VERTICES: &[Vertex] = &[
     },
 ];
 
+// ------------------------------------------------------------------- vertices to draw a rectangle
+
+const RECT_VERTICES: &[Vertex] = &[
+    Vertex {
+        position: [0.0, 0.0],
+        uv: [0.0, 0.0], // top left
+    },
+    Vertex {
+        position: [0.0, RECT_SIZE as f32],
+        uv: [0.0, 1.0], // bottom left
+    },
+    Vertex {
+        position: [RECT_SIZE as f32, 0.0],
+        uv: [1.0, 0.0], // top right
+    },
+    Vertex {
+        position: [RECT_SIZE as f32, RECT_SIZE as f32],
+        uv: [1.0, 1.0], // bottom right
+    },
+];
+
+const RECT_INDICES: &[u16] = &[0, 1, 2, /**/ 1, 3, 2];
+
+// ------------------------------------------------------------------- struct for instance buffer
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct InstanceData {
+    pub position: [f32; 2], // x, y
+    pub colour: [f32; 3],   // r, g, b
+    pub size: [f32; 2],     // w, h
+}
+
+// ------------------------------------------------------------------- descriptor for VertexBufferLayout
+
+impl InstanceData {
+    const ATTRIBS: [wgpu::VertexAttribute; 3] =
+        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x3, 2 => Float32x2];
+    // 0 => InstaceData::position, 1 => InstanceData::colour, 2 => InstanceData::size
+
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &Self::ATTRIBS,
+        }
+    }
+}
+
 // ------------------------------------------------------------------- renderer
 
 pub struct Renderer {
@@ -114,6 +140,10 @@ pub struct Renderer {
     uniform_buffer: wgpu::Buffer,
     fullscreen_vertex_buffer: wgpu::Buffer,
     rect_vertex_buffer: wgpu::Buffer,
+
+    instance_buffer: wgpu::Buffer,
+    instances: Vec<InstanceData>,
+
     index_buffer: wgpu::Buffer,
     num_indices: u32,
 
@@ -228,16 +258,6 @@ impl Renderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        // ----------------------------------------------------------- index buffer
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("index Buffer"),
-            contents: bytemuck::cast_slice(RECT_INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-
-        let num_indices = RECT_INDICES.len() as u32;
-
         // ----------------------------------------------------------- full screen vertex buffer
 
         let fullscreen_vertex_buffer =
@@ -254,6 +274,26 @@ impl Renderer {
             contents: bytemuck::cast_slice(RECT_VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
+
+        // ----------------------------------------------------------- instance buffer
+
+        let instances = Vec::new();
+
+        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("instance bufer"),
+            contents: bytemuck::cast_slice(&instances),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // ----------------------------------------------------------- index buffer
+
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("index Buffer"),
+            contents: bytemuck::cast_slice(RECT_INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        let num_indices = RECT_INDICES.len() as u32;
 
         // ----------------------------------------------------------- samplers
 
@@ -410,7 +450,7 @@ impl Renderer {
             &uniform_buffer,
         );
 
-        let mid_render_pipeline = create_pipeline(
+        let mid_render_pipeline = create_pipeline_with_instance(
             &device,
             "render pipeline for mid",
             Some(&u_bind_group_layout),
@@ -473,7 +513,12 @@ impl Renderer {
 
             fullscreen_vertex_buffer,
             rect_vertex_buffer,
+
             uniform_buffer,
+
+            instance_buffer,
+            instances,
+
             index_buffer,
             num_indices,
 
@@ -553,6 +598,7 @@ impl Renderer {
         mid_renderpass.set_pipeline(&self.mid_render_pipeline);
         mid_renderpass.set_bind_group(0, Some(&self.mid_bind_group), &[]);
         mid_renderpass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+        mid_renderpass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         mid_renderpass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         mid_renderpass.draw_indexed(0..self.num_indices, 0, 0..1);
 
@@ -630,7 +676,7 @@ impl Renderer {
 
     // --------------------------------------------------------------- update uniform buffer
 
-    pub fn update(&self, pos: Pos) {
+    pub fn update(&self, pos: Pos, instances: &[InstanceData]) {
         let mut model = Mat4::IDENTITY;
         model *= Mat4::from_translation(Vec3::new(pos.x, pos.y, 0.0));
 
@@ -655,6 +701,9 @@ impl Renderer {
                 projection_matrix: projection.to_cols_array_2d(),
             }]),
         );
+
+        self.queue
+            .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(instances));
     }
 }
 
@@ -827,6 +876,7 @@ fn create_u_t_s_bind_group(
 
 // ------------------------------------------------------------------- create render pipeline
 
+#[allow(unused)]
 fn create_pipeline(
     device: &wgpu::Device,
     label: &str,
@@ -847,6 +897,48 @@ fn create_pipeline(
             module: &shader,
             entry_point: Some("vs_main"),
             buffers: &[Some(Vertex::desc())],
+            compilation_options: Default::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs_main"),
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                blend: Some(blend_state),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview_mask: None,
+        cache: None,
+    })
+}
+
+// ------------------------------------------------------------------- create render pipeline w/ instance buffer
+
+fn create_pipeline_with_instance(
+    device: &wgpu::Device,
+    label: &str,
+    bind_group_layout: Option<&wgpu::BindGroupLayout>,
+    shader: &wgpu::ShaderModule,
+    blend_state: wgpu::BlendState,
+) -> wgpu::RenderPipeline {
+    let new_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some(label),
+        bind_group_layouts: &[bind_group_layout],
+        immediate_size: 0,
+    });
+
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some(label),
+        layout: Some(&new_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs_main"),
+            buffers: &[Some(Vertex::desc()), Some(InstanceData::desc())],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {

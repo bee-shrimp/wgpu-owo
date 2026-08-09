@@ -1,6 +1,7 @@
 // ------------------------------------------------------------------- imports
 
 use crate::input::{Direction, Directions};
+use crate::renderer::InstanceData;
 
 // ------------------------------------------------------------------- consts for rect
 
@@ -92,6 +93,7 @@ impl Rect {
 
 pub struct World {
     rect: Rect,
+    instances: Vec<InstanceData>,
     is_running: bool,
 }
 
@@ -99,8 +101,10 @@ pub struct World {
 
 impl Default for World {
     fn default() -> Self {
+        let instances = create_instances();
         Self {
             rect: Rect::default(),
+            instances,
             is_running: true,
         }
     }
@@ -110,6 +114,7 @@ impl World {
     pub fn update(&mut self, dt: f32, arrow_dir: Directions) {
         let rect_pos = self.rect.calc_pos(dt, arrow_dir);
 
+        self.instances = update_instances(&self.instances);
         self.rect.update(rect_pos);
     }
 
@@ -124,4 +129,25 @@ impl World {
     pub fn get_rect_pos(&self) -> Pos {
         self.rect.pos
     }
+
+    pub fn get_instances(&self) -> &[InstanceData] {
+        &self.instances
+    }
+}
+
+fn create_instances() -> Vec<InstanceData> {
+    let mut instances = Vec::new();
+    let particle = InstanceData {
+        position: [0.0, 0.0],
+        colour: [1.0, 1.0, 1.0],
+        size: [10.0, 10.0],
+    };
+    instances.push(particle);
+    instances
+}
+
+fn update_instances(data: &[InstanceData]) -> Vec<InstanceData> {
+    let instances: Vec<InstanceData> = data.iter().map(|i| i.position[1] += 1.0).collect(); //???
+
+    instances
 }

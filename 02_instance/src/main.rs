@@ -62,7 +62,7 @@ impl ApplicationHandler for App {
 
         self.last_draw_data = Pos::default();
 
-        self.renderer.as_mut().unwrap().update(Pos::default());
+        self.renderer.as_mut().unwrap().update(Pos::default(), &[]);
 
         self.need_redraw = true;
     }
@@ -175,7 +175,8 @@ impl ApplicationHandler for App {
             self.need_redraw = true;
             self.last_draw_data = rect_pos;
             let renderer = self.renderer.as_mut().unwrap();
-            renderer.update(rect_pos);
+            let instances = self.world.get_instances();
+            renderer.update(rect_pos, instances);
             renderer.get_window().request_redraw()
         } else {
             self.need_redraw = false;
