@@ -17,7 +17,7 @@ pub enum Direction {
 
 // ------------------------------------------------------------------- direction x/y
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Directions {
     pub x: Direction,
     pub y: Direction,
@@ -60,7 +60,7 @@ impl InputHandler {
         self.pressed.is_empty()
     }
 
-    pub fn get_directions(&self) -> Directions {
+    pub fn get_arrow_dir(&self) -> Directions {
         let direction_x = self
             .pressed
             .iter()
@@ -86,4 +86,31 @@ impl InputHandler {
             y: direction_y,
         }
     }
+
+    // pub fn get_wasd_dir(&self) -> Directions {
+    //     let direction_x = self
+    //         .pressed
+    //         .iter()
+    //         .find_map(|c| match c {
+    //             KeyCode::KeyA => Some(Direction::Left),
+    //             KeyCode::KeyD => Some(Direction::Right),
+    //             _ => None,
+    //         })
+    //         .unwrap_or_default();
+    //
+    //     let direction_y = self
+    //         .pressed
+    //         .iter()
+    //         .find_map(|c| match c {
+    //             KeyCode::KeyW => Some(Direction::Up),
+    //             KeyCode::KeyS => Some(Direction::Down),
+    //             _ => None,
+    //         })
+    //         .unwrap_or_default();
+    //
+    //     Directions {
+    //         x: direction_x,
+    //         y: direction_y,
+    //     }
+    // }
 }

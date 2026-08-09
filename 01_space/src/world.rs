@@ -79,7 +79,6 @@ impl Rect {
     // --------------------------------------------------------------- calculate new pos
 
     fn calc_pos(&self, dt: f32, dir: Directions) -> Pos {
-        println!("{:?}", dt);
         let (dx, dy) = self.calc_velosity(dir);
         let x = self.pos.x + dx * self.speed * dt;
         let y = self.pos.y + dy * self.speed * dt;
@@ -106,8 +105,8 @@ impl Default for World {
 }
 
 impl World {
-    pub fn update(&mut self, dt: f32, dir: Directions) {
-        let rect_pos = self.rect.calc_pos(dt, dir);
+    pub fn update(&mut self, dt: f32, arrow_dir: Directions) {
+        let rect_pos = self.rect.calc_pos(dt, arrow_dir);
 
         self.rect.update(rect_pos);
     }

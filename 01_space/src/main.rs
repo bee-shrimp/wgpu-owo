@@ -163,8 +163,9 @@ impl ApplicationHandler for App {
 
         // ----------------------------------------------------------- update
 
-        let directions = self.input.get_directions();
-        self.world.update(dt, directions);
+        let arrow_dir = self.input.get_arrow_dir();
+
+        self.world.update(dt, arrow_dir);
 
         let rect_pos = self.world.get_rect_pos();
 
