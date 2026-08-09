@@ -19,14 +19,10 @@ mod renderer;
 use renderer::Renderer;
 
 mod world;
-use world::{Pos, World};
+use world::{EPSILON, Pos, World};
 
 mod input;
 use input::InputHandler;
-
-// ------------------------------------------------------------------- consts
-
-const EPSILON: f32 = 0.001;
 
 // ------------------------------------------------------------------- App struct
 
@@ -59,7 +55,7 @@ impl ApplicationHandler for App {
 
         // ----------------------------------------------------------- init other fields
 
-        self.world = World::new();
+        self.world = World::default();
         self.input = InputHandler::new();
 
         self.last_frame_time = Some(Instant::now());
@@ -115,14 +111,12 @@ impl ApplicationHandler for App {
                         ..
                     },
                 ..
-            } => match state {
-                ElementState::Pressed => {
-                    self.input.insert(code);
-                }
-                ElementState::Released => {
-                    self.input.remove(&code);
-                }
-            },
+            } => {
+                match state {
+                    ElementState::Pressed => self.input.insert(code),
+                    ElementState::Released => self.input.remove(code),
+                };
+            }
 
             _ => (),
         }
@@ -138,30 +132,28 @@ impl ApplicationHandler for App {
         let dt = if let Some(last) = self.last_frame_time {
             now.duration_since(last).as_secs_f32().min(0.1)
         } else {
-            0.1
+            0.016 // fps60
         };
 
         self.last_frame_time = Some(now);
 
         // ----------------------------------------------------------- return if paused or no input
 
-        let keys = self.input.get_pressed_keys();
-
-        if keys.contains(&KeyCode::KeyQ) {
+        if self.input.has(KeyCode::KeyQ) {
             event_loop.exit();
         }
 
-        if keys.is_empty() {
+        if self.input.is_still() {
             self.need_redraw = false;
             return;
         }
 
-        if !self.world.is_running() && !keys.contains(&KeyCode::Space) {
+        if !self.world.is_running() && !self.input.has(KeyCode::Space) {
             return;
         }
 
-        if keys.contains(&KeyCode::Space) {
-            self.world = self.world.toggle_running();
+        if self.input.has(KeyCode::Space) {
+            self.world.toggle_running();
             return;
         }
 

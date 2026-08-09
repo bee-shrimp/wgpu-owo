@@ -12,11 +12,19 @@ const RECT_SPEED: f32 = 60.0;
 pub const LOGIC_WIDTH: u32 = 320;
 pub const LOGIC_HEIGHT: u32 = 240;
 
+// ------------------------------------------------------------------- epsilon for rect movement
+
+pub const EPSILON: f32 = 0.001;
+
+// ------------------------------------------------------------------- struct for rect position
+
 #[derive(Debug, Clone, Copy)]
 pub struct Pos {
     pub x: f32,
     pub y: f32,
 }
+
+// ------------------------------------------------------------------- default pos is the center
 
 impl Default for Pos {
     fn default() -> Self {
@@ -35,6 +43,8 @@ struct Rect {
     speed: f32,
 }
 
+// ------------------------------------------------------------------- default rect
+
 impl Default for Rect {
     fn default() -> Self {
         Self {
@@ -45,25 +55,35 @@ impl Default for Rect {
 }
 
 impl Rect {
-    fn new(pos: Pos) -> Self {
-        Self {
-            pos: pos,
-            speed: RECT_SPEED,
-        }
+    // --------------------------------------------------------------- apply new pos
+    fn update(&mut self, pos: Pos) {
+        self.pos = pos
     }
-    fn update(&mut self, dt: f32, dir: Directions) {
-        let dir_x = match dir.x {
+
+    // --------------------------------------------------------------- calculate velosity
+
+    fn calc_velosity(&self, dir: Directions) -> (f32, f32) {
+        let dx = match dir.x {
             Direction::Left => -1.0,
             Direction::Right => 1.0,
             _ => 0.0,
         };
-        let dir_y = match dir.y {
+        let dy = match dir.y {
             Direction::Down => 1.0,
             Direction::Up => -1.0,
             _ => 0.0,
         };
-        self.pos.x += dir_x * self.speed * dt;
-        self.pos.y += dir_y * self.speed * dt;
+        (dx, dy)
+    }
+
+    // --------------------------------------------------------------- calculate new pos
+
+    fn calc_pos(&self, dt: f32, dir: Directions) -> Pos {
+        println!("{:?}", dt);
+        let (dx, dy) = self.calc_velosity(dir);
+        let x = self.pos.x + dx * self.speed * dt;
+        let y = self.pos.y + dy * self.speed * dt;
+        Pos { x, y }
     }
 }
 
@@ -73,6 +93,8 @@ pub struct World {
     rect: Rect,
     is_running: bool,
 }
+
+// ------------------------------------------------------------------- default world w/ rect at the center
 
 impl Default for World {
     fn default() -> Self {
@@ -84,24 +106,14 @@ impl Default for World {
 }
 
 impl World {
-    pub fn new() -> Self {
-        let rect = Rect::new(Pos::default());
-
-        Self {
-            rect,
-            is_running: true,
-        }
-    }
-
     pub fn update(&mut self, dt: f32, dir: Directions) {
-        self.rect.update(dt, dir);
+        let rect_pos = self.rect.calc_pos(dt, dir);
+
+        self.rect.update(rect_pos);
     }
 
-    pub fn toggle_running(&self) -> Self {
-        Self {
-            rect: self.rect,
-            is_running: !self.is_running,
-        }
+    pub fn toggle_running(&mut self) {
+        self.is_running = !self.is_running
     }
 
     pub fn is_running(&self) -> bool {
