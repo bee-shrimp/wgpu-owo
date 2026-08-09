@@ -126,7 +126,7 @@ impl ApplicationHandler for App {
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         //
-        // ----------------------------------------------------------- dt
+        // ----------------------------------------------------------- calculate dt
 
         let now = Instant::now();
         let dt = if let Some(last) = self.last_frame_time {
@@ -137,27 +137,29 @@ impl ApplicationHandler for App {
 
         self.last_frame_time = Some(now);
 
-        // ----------------------------------------------------------- return if paused or no input
+        // ----------------------------------------------------------- quit if key q is pressed
 
         if self.input.has(KeyCode::KeyQ) {
             event_loop.exit();
         }
+
+        // ----------------------------------------------------------- return if no input
 
         if self.input.is_still() {
             self.need_redraw = false;
             return;
         }
 
+        // ----------------------------------------------------------- return if paused and space is not pressed
+
         if !self.world.is_running() && !self.input.has(KeyCode::Space) {
             return;
         }
 
+        // ----------------------------------------------------------- pause/resume if space is pressed
+
         if self.input.has(KeyCode::Space) {
             self.world.toggle_running();
-            return;
-        }
-
-        if !self.world.is_running() {
             return;
         }
 

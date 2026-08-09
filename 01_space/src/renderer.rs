@@ -31,6 +31,7 @@ struct Size {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Uniforms {
     pub model_matrix: [[f32; 4]; 4],
+    pub view_matrix: [[f32; 4]; 4],
     pub projection_matrix: [[f32; 4]; 4],
 }
 
@@ -209,6 +210,7 @@ impl Renderer {
 
         let initial_uniforms = Uniforms {
             model_matrix: Mat4::IDENTITY.to_cols_array_2d(),
+            view_matrix: Mat4::IDENTITY.to_cols_array_2d(),
             projection_matrix: camera::lh::proj::directx::orthographic(
                 0.0,
                 LOGIC_WIDTH as f32,
@@ -632,6 +634,9 @@ impl Renderer {
         let mut model = Mat4::IDENTITY;
         model *= Mat4::from_translation(Vec3::new(pos.x, pos.y, 0.0));
 
+        let mut view = Mat4::IDENTITY;
+        view *= Mat4::from_scale(Vec3::splat(0.8));
+
         let projection = camera::lh::proj::directx::orthographic(
             0.0,
             LOGIC_WIDTH as f32,
@@ -646,6 +651,7 @@ impl Renderer {
             0,
             bytemuck::cast_slice(&[Uniforms {
                 model_matrix: model.to_cols_array_2d(),
+                view_matrix: view.to_cols_array_2d(),
                 projection_matrix: projection.to_cols_array_2d(),
             }]),
         );
