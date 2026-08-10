@@ -80,8 +80,10 @@ impl Rect {
 
     fn calc_pos(&self, dt: f32, dir: Directions) -> Pos {
         let (dx, dy) = self.calc_velosity(dir);
-        let x = self.pos.x + dx * self.speed * dt;
-        let y = self.pos.y + dy * self.speed * dt;
+        let x =
+            (self.pos.x + dx * self.speed * dt).clamp(0.0, LOGIC_WIDTH as f32 - RECT_SIZE as f32);
+        let y =
+            (self.pos.y + dy * self.speed * dt).clamp(0.0, LOGIC_HEIGHT as f32 - RECT_SIZE as f32);
         Pos { x, y }
     }
 }

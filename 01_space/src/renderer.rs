@@ -635,7 +635,7 @@ impl Renderer {
         model *= Mat4::from_translation(Vec3::new(pos.x, pos.y, 0.0));
 
         let mut view = Mat4::IDENTITY;
-        view *= Mat4::from_scale(Vec3::splat(0.8));
+        view *= Mat4::from_scale(Vec3::splat(1.0));
 
         let projection = camera::lh::proj::directx::orthographic(
             0.0,
