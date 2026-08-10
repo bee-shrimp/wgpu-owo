@@ -1,8 +1,8 @@
 
 @group(0) @binding(0)
-var diffuse_texture: texture_2d<f32>;
+var base_texture: texture_2d<f32>;
 @group(0) @binding(1)
-var base_sampler: sampler;
+var sampler_nearest: sampler;
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
@@ -16,16 +16,18 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(
-    in: VertexInput,
+    model: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
 
-    out.position = vec4<f32>(in.position.xy, 0.0, 1.0);
-    out.uv = in.uv;
+    out.position = vec4<f32>(model.position.xy, 0.0, 1.0);
+    out.uv = model.uv;
     return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(diffuse_texture, base_sampler, in.uv);
+    let colour = textureSample(base_texture, sampler_nearest, in.uv);
+
+    return vec4<f32>(colour);
 }

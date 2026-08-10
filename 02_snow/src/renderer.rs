@@ -14,7 +14,7 @@ use glam::{
 };
 
 use crate::{
-    Arc, Pos, Window,
+    Arc, Window,
     world::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_SIZE},
 };
 
@@ -30,7 +30,6 @@ struct Size {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Uniforms {
-    pub model_matrix: [[f32; 4]; 4],
     pub view_matrix: [[f32; 4]; 4],
     pub projection_matrix: [[f32; 4]; 4],
 }
@@ -114,7 +113,7 @@ pub struct InstanceData {
 
 impl InstanceData {
     const ATTRIBS: [wgpu::VertexAttribute; 3] =
-        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x3, 2 => Float32x2];
+        wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x3, 4 => Float32x2];
     // 0 => InstaceData::position, 1 => InstanceData::colour, 2 => InstanceData::size
 
     fn desc() -> wgpu::VertexBufferLayout<'static> {
@@ -163,6 +162,7 @@ impl Renderer {
     pub async fn new(
         window: Arc<Window>,
         event_loop: &ActiveEventLoop,
+        instances: &[InstanceData],
     ) -> anyhow::Result<Renderer> {
         // ----------------------------------------------------------- size of window
 
@@ -239,7 +239,6 @@ impl Renderer {
         // ----------------------------------------------------------- uniform buffer
 
         let initial_uniforms = Uniforms {
-            model_matrix: Mat4::IDENTITY.to_cols_array_2d(),
             view_matrix: Mat4::IDENTITY.to_cols_array_2d(),
             projection_matrix: camera::lh::proj::directx::orthographic(
                 0.0,
@@ -276,8 +275,7 @@ impl Renderer {
         });
 
         // ----------------------------------------------------------- instance buffer
-
-        let instances = Vec::new();
+        let instances = Vec::from(instances);
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("instance bufer"),
@@ -600,7 +598,7 @@ impl Renderer {
         mid_renderpass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
         mid_renderpass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         mid_renderpass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        mid_renderpass.draw_indexed(0..self.num_indices, 0, 0..1);
+        mid_renderpass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as u32);
 
         // ----------------------------------------------------------- end the renderpass
 
@@ -676,10 +674,7 @@ impl Renderer {
 
     // --------------------------------------------------------------- update uniform buffer
 
-    pub fn update(&self, pos: Pos, instances: &[InstanceData]) {
-        let mut model = Mat4::IDENTITY;
-        model *= Mat4::from_translation(Vec3::new(pos.x, pos.y, 0.0));
-
+    pub fn update(&self, instances: &[InstanceData]) {
         let mut view = Mat4::IDENTITY;
         view *= Mat4::from_scale(Vec3::splat(1.0));
 
@@ -696,7 +691,6 @@ impl Renderer {
             &self.uniform_buffer,
             0,
             bytemuck::cast_slice(&[Uniforms {
-                model_matrix: model.to_cols_array_2d(),
                 view_matrix: view.to_cols_array_2d(),
                 projection_matrix: projection.to_cols_array_2d(),
             }]),

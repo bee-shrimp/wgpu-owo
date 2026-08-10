@@ -19,7 +19,7 @@ mod renderer;
 use renderer::Renderer;
 
 mod world;
-use world::{EPSILON, Pos, World};
+use world::World;
 
 mod input;
 use input::InputHandler;
@@ -32,8 +32,6 @@ struct App {
     world: World,
     input: InputHandler,
     last_frame_time: Option<Instant>,
-    last_draw_data: Pos,
-    need_redraw: bool,
 }
 
 impl ApplicationHandler for App {
@@ -46,25 +44,25 @@ impl ApplicationHandler for App {
                 .expect("failed to create window"),
         );
 
+        // ----------------------------------------------------------- create world
+
+        self.world = World::default();
+        let instances = self.world.get_instances();
+
         // ----------------------------------------------------------- create renderer
 
         self.renderer = Some(
-            pollster::block_on(Renderer::new(window, event_loop))
+            pollster::block_on(Renderer::new(window, event_loop, &instances))
                 .expect("failed to create renderer"),
         );
 
         // ----------------------------------------------------------- init other fields
 
-        self.world = World::default();
         self.input = InputHandler::new();
 
         self.last_frame_time = Some(Instant::now());
 
-        self.last_draw_data = Pos::default();
-
-        self.renderer.as_mut().unwrap().update(Pos::default(), &[]);
-
-        self.need_redraw = true;
+        self.renderer.as_mut().unwrap().update(&instances);
     }
 
     // --------------------------------------------------------------- handle window events
@@ -89,17 +87,13 @@ impl ApplicationHandler for App {
 
             // ------------------------------------------------------- redraw
             //
-            WindowEvent::RedrawRequested => {
-                if self.need_redraw {
-                    match renderer.render() {
-                        Ok(_) => {}
-                        Err(e) => {
-                            log::error!("{e}");
-                            event_loop.exit();
-                        }
-                    }
+            WindowEvent::RedrawRequested => match renderer.render() {
+                Ok(_) => {}
+                Err(e) => {
+                    log::error!("{e}");
+                    event_loop.exit();
                 }
-            }
+            },
 
             // ------------------------------------------------------- handle key inputs
             //
@@ -143,13 +137,6 @@ impl ApplicationHandler for App {
             event_loop.exit();
         }
 
-        // ----------------------------------------------------------- return if no input
-
-        if self.input.is_still() {
-            self.need_redraw = false;
-            return;
-        }
-
         // ----------------------------------------------------------- return if paused and space is not pressed
 
         if !self.world.is_running() && !self.input.has(KeyCode::Space) {
@@ -165,32 +152,13 @@ impl ApplicationHandler for App {
 
         // ----------------------------------------------------------- update
 
-        let arrow_dir = self.input.get_arrow_dir();
+        self.world.update(dt);
 
-        self.world.update(dt, arrow_dir);
-
-        let rect_pos = self.world.get_rect_pos();
-
-        if has_moved(&self.last_draw_data, &rect_pos) {
-            self.need_redraw = true;
-            self.last_draw_data = rect_pos;
-            let renderer = self.renderer.as_mut().unwrap();
-            let instances = self.world.get_instances();
-            renderer.update(rect_pos, instances);
-            renderer.get_window().request_redraw()
-        } else {
-            self.need_redraw = false;
-        }
+        let renderer = self.renderer.as_mut().unwrap();
+        let instances = self.world.get_instances();
+        renderer.update(&instances);
+        renderer.get_window().request_redraw()
     }
-}
-
-// ------------------------------------------------------------------- check if redraw is needed
-
-fn has_moved(last_draw_data: &Pos, pos: &Pos) -> bool {
-    let x_dist = last_draw_data.x - pos.x;
-    let y_dist = last_draw_data.y - pos.y;
-
-    x_dist.abs() >= EPSILON || y_dist.abs() >= EPSILON
 }
 
 // ------------------------------------------------------------------- main
