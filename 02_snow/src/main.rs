@@ -62,15 +62,17 @@ impl ApplicationHandler for App {
 
         self.last_frame_time = Some(Instant::now());
 
-        self.renderer.as_mut().unwrap().update(&instances);
+        self.renderer
+            .as_mut()
+            .expect("failed to find renderer")
+            .update(&instances);
     }
 
     // --------------------------------------------------------------- handle window events
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        let renderer = match &mut self.renderer {
-            Some(canvas) => canvas,
-            None => return,
+        let Some(renderer) = &mut self.renderer else {
+            return;
         };
 
         match event {
@@ -152,11 +154,12 @@ impl ApplicationHandler for App {
 
         // ----------------------------------------------------------- update
 
+        let renderer = self.renderer.as_mut().expect("failed to find renderer");
+
         self.world.update(dt);
 
-        let renderer = self.renderer.as_mut().unwrap();
         let instances = self.world.get_instances();
-        renderer.update(&instances);
+        renderer.update(instances);
         renderer.get_window().request_redraw()
     }
 }

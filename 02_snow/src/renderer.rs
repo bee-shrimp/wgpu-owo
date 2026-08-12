@@ -20,7 +20,7 @@ use crate::{
 
 // ------------------------------------------------------------------- texture size for create_texture()
 
-struct Size {
+struct TextureSize {
     width: u32,
     height: u32,
 }
@@ -123,6 +123,15 @@ impl InstanceData {
             attributes: &Self::ATTRIBS,
         }
     }
+}
+
+// ------------------------------------------------------------------- viewport data for scaler renderpass
+
+struct ViewportData {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
 }
 
 // ------------------------------------------------------------------- renderer
@@ -275,7 +284,7 @@ impl Renderer {
         });
 
         // ----------------------------------------------------------- instance buffer
-        let instances = Vec::from(instances);
+        let instances = instances.to_vec();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("instance bufer"),
@@ -435,7 +444,7 @@ impl Renderer {
         let mid_texture_view = create_texture(
             &device,
             "mid texture",
-            &Size {
+            &TextureSize {
                 width: LOGIC_WIDTH,
                 height: LOGIC_HEIGHT,
             },
@@ -623,7 +632,7 @@ impl Renderer {
             multiview_mask: None,
         });
 
-        let viewport_xywh = calc_ratio(
+        let viewport_data = calc_ratio(
             self.window.inner_size().width,
             self.window.inner_size().height,
         );
@@ -634,10 +643,10 @@ impl Renderer {
         scaler_renderpass.set_bind_group(0, Some(&self.scaler_bind_group), &[]);
         scaler_renderpass.set_vertex_buffer(0, self.fullscreen_vertex_buffer.slice(..));
         scaler_renderpass.set_viewport(
-            viewport_xywh[0],
-            viewport_xywh[1],
-            viewport_xywh[2],
-            viewport_xywh[3],
+            viewport_data.x,
+            viewport_data.y,
+            viewport_data.w,
+            viewport_data.h,
             0.0,
             1.0,
         );
@@ -703,7 +712,6 @@ impl Renderer {
 
 // ------------------------------------------------------------------- create texture with image data
 
-// #[allow(unused)]
 // fn create_diffuse_texture(
 //     device: &wgpu::Device,
 //     queue: &wgpu::Queue,
@@ -761,7 +769,7 @@ impl Renderer {
 //
 // ------------------------------------------------------------------- create texture to draw onto / to be read
 
-fn create_texture(device: &wgpu::Device, label: &str, size: &Size) -> wgpu::TextureView {
+fn create_texture(device: &wgpu::Device, label: &str, size: &TextureSize) -> wgpu::TextureView {
     let new_texture_size = wgpu::Extent3d {
         width: size.width,
         height: size.height,
@@ -835,81 +843,79 @@ fn create_t_s_bind_group(
 
 // ------------------------------------------------------------------- create bind group w/ uniform, texture, sampler
 
-#[allow(unused)]
-fn create_u_t_s_bind_group(
-    device: &wgpu::Device,
-    label: &str,
-    bind_group_layout: &wgpu::BindGroupLayout,
-    uniform_buffer: &wgpu::Buffer,
-    texture_view: &wgpu::TextureView,
-    sampler: &wgpu::Sampler,
-) -> wgpu::BindGroup {
-    device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some(label),
-        layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: uniform_buffer,
-                    offset: 0,
-                    size: None,
-                }),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::TextureView(texture_view),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: wgpu::BindingResource::Sampler(sampler),
-            },
-        ],
-    })
-}
+// fn create_u_t_s_bind_group(
+//     device: &wgpu::Device,
+//     label: &str,
+//     bind_group_layout: &wgpu::BindGroupLayout,
+//     uniform_buffer: &wgpu::Buffer,
+//     texture_view: &wgpu::TextureView,
+//     sampler: &wgpu::Sampler,
+// ) -> wgpu::BindGroup {
+//     device.create_bind_group(&wgpu::BindGroupDescriptor {
+//         label: Some(label),
+//         layout: &bind_group_layout,
+//         entries: &[
+//             wgpu::BindGroupEntry {
+//                 binding: 0,
+//                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+//                     buffer: uniform_buffer,
+//                     offset: 0,
+//                     size: None,
+//                 }),
+//             },
+//             wgpu::BindGroupEntry {
+//                 binding: 1,
+//                 resource: wgpu::BindingResource::TextureView(texture_view),
+//             },
+//             wgpu::BindGroupEntry {
+//                 binding: 2,
+//                 resource: wgpu::BindingResource::Sampler(sampler),
+//             },
+//         ],
+//     })
+// }
 
 // ------------------------------------------------------------------- create render pipeline
 
-#[allow(unused)]
-fn create_pipeline(
-    device: &wgpu::Device,
-    label: &str,
-    bind_group_layout: Option<&wgpu::BindGroupLayout>,
-    shader: &wgpu::ShaderModule,
-    blend_state: wgpu::BlendState,
-) -> wgpu::RenderPipeline {
-    let new_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some(label),
-        bind_group_layouts: &[bind_group_layout],
-        immediate_size: 0,
-    });
-
-    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some(label),
-        layout: Some(&new_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader,
-            entry_point: Some("vs_main"),
-            buffers: &[Some(Vertex::desc())],
-            compilation_options: Default::default(),
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &shader,
-            entry_point: Some("fs_main"),
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                blend: Some(blend_state),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        primitive: wgpu::PrimitiveState::default(),
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState::default(),
-        multiview_mask: None,
-        cache: None,
-    })
-}
+// fn create_pipeline(
+//     device: &wgpu::Device,
+//     label: &str,
+//     bind_group_layout: Option<&wgpu::BindGroupLayout>,
+//     shader: &wgpu::ShaderModule,
+//     blend_state: wgpu::BlendState,
+// ) -> wgpu::RenderPipeline {
+//     let new_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+//         label: Some(label),
+//         bind_group_layouts: &[bind_group_layout],
+//         immediate_size: 0,
+//     });
+//
+//     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+//         label: Some(label),
+//         layout: Some(&new_pipeline_layout),
+//         vertex: wgpu::VertexState {
+//             module: &shader,
+//             entry_point: Some("vs_main"),
+//             buffers: &[Some(Vertex::desc())],
+//             compilation_options: Default::default(),
+//         },
+//         fragment: Some(wgpu::FragmentState {
+//             module: &shader,
+//             entry_point: Some("fs_main"),
+//             compilation_options: Default::default(),
+//             targets: &[Some(wgpu::ColorTargetState {
+//                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
+//                 blend: Some(blend_state),
+//                 write_mask: wgpu::ColorWrites::ALL,
+//             })],
+//         }),
+//         primitive: wgpu::PrimitiveState::default(),
+//         depth_stencil: None,
+//         multisample: wgpu::MultisampleState::default(),
+//         multiview_mask: None,
+//         cache: None,
+//     })
+// }
 
 // ------------------------------------------------------------------- create render pipeline w/ instance buffer
 
@@ -955,7 +961,7 @@ fn create_pipeline_with_instance(
 
 // --------------------------------------------------------------- calculate viewport data for scaler
 
-fn calc_ratio(surface_width: u32, surface_height: u32) -> [f32; 4] {
+fn calc_ratio(surface_width: u32, surface_height: u32) -> ViewportData {
     let w = LOGIC_WIDTH as f32;
     let h = LOGIC_HEIGHT as f32;
 
@@ -977,5 +983,5 @@ fn calc_ratio(surface_width: u32, surface_height: u32) -> [f32; 4] {
     let x = (surface_w - w) / 2.0;
     let y = (surface_h - h) / 2.0;
 
-    [x, y, w, h]
+    ViewportData { x, y, w, h }
 }

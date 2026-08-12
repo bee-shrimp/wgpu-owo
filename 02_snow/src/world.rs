@@ -74,6 +74,7 @@ impl Rect {
 
 pub struct World {
     rects: Vec<Rect>,
+    instances: Vec<InstanceData>,
     time: f32,
     is_running: bool,
 }
@@ -86,6 +87,7 @@ impl Default for World {
 
         Self {
             rects,
+            instances: Vec::new(),
             time: 0.0,
             is_running: true,
         }
@@ -98,19 +100,29 @@ impl World {
             let new_pos = rect.calc_pos(dt, self.time);
             rect.update(new_pos);
         }
+
         self.time += dt;
+        self.update_instances();
     }
 
     pub fn toggle_running(&mut self) {
         self.is_running = !self.is_running
     }
 
-    pub fn is_running(&self) -> bool {
-        self.is_running
+    fn update_instances(&mut self) {
+        self.instances.clear();
+
+        for r in &self.rects {
+            self.instances.push(build_instance_data(&r))
+        }
     }
 
-    pub fn get_instances(&self) -> Vec<InstanceData> {
-        build_instance_data(&self.rects)
+    pub fn get_instances(&self) -> &[InstanceData] {
+        &self.instances
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.is_running
     }
 }
 
@@ -121,7 +133,6 @@ fn create_rects() -> Vec<Rect> {
             id: i,
             pos: Pos {
                 x: rand::random_range(0..LOGIC_WIDTH as i32 - RECT_SIZE as i32) as f32,
-                //x: (i as u32 * LOGIC_WIDTH / NUM_RECTS as u32) as f32,
                 y: rand::random_range(0..LOGIC_HEIGHT as i32 - RECT_SIZE as i32) as f32,
             },
             colour: Colour(255, 255, 255),
@@ -135,17 +146,14 @@ fn create_rects() -> Vec<Rect> {
         .collect::<Vec<Rect>>()
 }
 
-fn build_instance_data(rects: &[Rect]) -> Vec<InstanceData> {
-    rects
-        .into_iter()
-        .map(|r| InstanceData {
-            position: [r.pos.x as f32, r.pos.y as f32],
-            colour: [
-                (r.colour.0 / 255) as f32,
-                (r.colour.1 / 255) as f32,
-                (r.colour.2 / 255) as f32,
-            ],
-            size: [r.size.w as f32, r.size.h as f32],
-        })
-        .collect::<Vec<InstanceData>>()
+fn build_instance_data(r: &Rect) -> InstanceData {
+    InstanceData {
+        position: [r.pos.x as f32, r.pos.y as f32],
+        colour: [
+            (r.colour.0 / 255) as f32,
+            (r.colour.1 / 255) as f32,
+            (r.colour.2 / 255) as f32,
+        ],
+        size: [r.size.w as f32, r.size.h as f32],
+    }
 }
