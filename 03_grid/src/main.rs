@@ -8,11 +8,7 @@ use std::time::Instant;
 
 use anyhow::Context;
 use winit::{
-    application::ApplicationHandler,
-    event::{ElementState, KeyEvent, WindowEvent},
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowId},
+    application::ApplicationHandler, event::{ElementState, KeyEvent, WindowEvent::{self, MouseInput}}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, keyboard::{KeyCode, PhysicalKey}, window::{Window, WindowId},
 };
 
 mod renderer;
@@ -20,6 +16,8 @@ use renderer::Renderer;
 
 mod world;
 use world::World;
+
+mod ecs;
 
 mod input;
 use input::InputHandler;
@@ -47,6 +45,8 @@ impl ApplicationHandler for App {
         // ----------------------------------------------------------- create world
 
         self.world = World::default();
+        self.world.init().expect("failed to init world");
+
         let instances = self.world.get_instances();
 
         // ----------------------------------------------------------- create renderer
@@ -96,6 +96,10 @@ impl ApplicationHandler for App {
                     event_loop.exit();
                 }
             },
+
+            WindowEvent::MouseInput { event: MouseInput {button: winit::event::MouseButton::Code(code), .. } .. } => {
+                match state 
+            }
 
             // ------------------------------------------------------- handle key inputs
             //
@@ -159,7 +163,7 @@ impl ApplicationHandler for App {
         self.world.update(dt);
 
         let instances = self.world.get_instances();
-        renderer.update(instances);
+        renderer.update(&instances);
         renderer.get_window().request_redraw()
     }
 }
