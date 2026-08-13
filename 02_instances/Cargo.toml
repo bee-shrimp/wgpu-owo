@@ -1,10 +1,10 @@
 [package]
-name = "snow"
+name = "instances"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "02_snow"
+name = "02_instances"
 path = "src/main.rs"
 
 [dependencies]

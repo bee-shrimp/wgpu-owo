@@ -21,6 +21,8 @@ use renderer::Renderer;
 mod world;
 use world::World;
 
+mod ecs;
+
 mod input;
 use input::InputHandler;
 
