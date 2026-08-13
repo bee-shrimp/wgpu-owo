@@ -47,6 +47,8 @@ impl ApplicationHandler for App {
         // ----------------------------------------------------------- create world
 
         self.world = World::default();
+        self.world.init().expect("failed to init world");
+
         let instances = self.world.get_instances();
 
         // ----------------------------------------------------------- create renderer
@@ -159,7 +161,7 @@ impl ApplicationHandler for App {
         self.world.update(dt);
 
         let instances = self.world.get_instances();
-        renderer.update(instances);
+        renderer.update(&instances);
         renderer.get_window().request_redraw()
     }
 }
