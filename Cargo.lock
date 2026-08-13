@@ -914,6 +914,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "grid"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "env_logger",
+ "glam",
+ "log",
+ "pollster",
+ "rand 0.10.2",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "half"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

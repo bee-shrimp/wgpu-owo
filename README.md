@@ -50,22 +50,32 @@ what i learnt:
 
 - pixel coord is much easier to work with.  
 
-## 02_snow
+## 02_instances
 
 what it does:  
 
-- draw many white rects with random size and place.  
-- rects fall down.  
+- draw many rects with random position, size, and colour.  
+- rects fall down with wavy move.  
+- (rects are managed with rudimentry ecs system)
 
 how it works:  
 
-- world has a vec of rects.  
-- world build a vec of InstanceData from rects data.  
+- world has components struct.  
+- components has vec of position/velocity/size/colour.  
+- each rects has id which also is the index of components vec.  
+- world build a vec of InstanceData from components data.  
 - renderer.update() write InstanceData to instance buffer.  
 - shader use instance buffer data to draw many rects.  
 
 what i learnt:  
 
 - how to use instancing.  
+- how to manage entities with ecs.  
 
+## 03_grid
+
+what it does:  
+
+- draw colourful grids.  
+- clicking changes the colour of grid.  
 
