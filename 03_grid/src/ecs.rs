@@ -10,6 +10,12 @@ pub struct Pos {
     pub y: f32,
 }
 
+impl Default for Pos {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vel {
     pub dx: f32,
@@ -20,6 +26,12 @@ pub struct Vel {
 pub struct Size {
     pub w: u32,
     pub h: u32,
+}
+
+impl Default for Size {
+    fn default() -> Self {
+        Self { w: 0, h: 0 }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

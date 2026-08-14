@@ -8,7 +8,11 @@ use std::time::Instant;
 
 use anyhow::Context;
 use winit::{
-    application::ApplicationHandler, event::{ElementState, KeyEvent, WindowEvent::{self, MouseInput}}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, keyboard::{KeyCode, PhysicalKey}, window::{Window, WindowId},
+    application::ApplicationHandler,
+    event::{ElementState, KeyEvent, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
 };
 
 mod renderer;
@@ -18,6 +22,7 @@ mod world;
 use world::World;
 
 mod ecs;
+use crate::ecs::{Pos, Size};
 
 mod input;
 use input::InputHandler;
@@ -49,6 +54,15 @@ impl ApplicationHandler for App {
 
         let instances = self.world.get_instances();
 
+        // ----------------------------------------------------------- init input handler
+
+        let window_size = window.inner_size();
+
+        self.input = InputHandler::new(Size {
+            w: window_size.width,
+            h: window_size.height,
+        });
+
         // ----------------------------------------------------------- create renderer
 
         self.renderer = Some(
@@ -56,16 +70,16 @@ impl ApplicationHandler for App {
                 .expect("failed to create renderer"),
         );
 
-        // ----------------------------------------------------------- init other fields
-
-        self.input = InputHandler::new();
-
-        self.last_frame_time = Some(Instant::now());
+        // ----------------------------------------------------------- init renderer
 
         self.renderer
             .as_mut()
             .expect("failed to find renderer")
             .update(&instances);
+
+        // ----------------------------------------------------------- init other fields
+
+        self.last_frame_time = Some(Instant::now());
     }
 
     // --------------------------------------------------------------- handle window events
@@ -85,7 +99,13 @@ impl ApplicationHandler for App {
 
             // ------------------------------------------------------- resize
             //
-            WindowEvent::Resized(size) => renderer.resize(size.width, size.height),
+            WindowEvent::Resized(size) => {
+                renderer.resize(size.width, size.height);
+                self.input.resize(Size {
+                    w: size.width,
+                    h: size.height,
+                });
+            }
 
             // ------------------------------------------------------- redraw
             //
@@ -97,9 +117,21 @@ impl ApplicationHandler for App {
                 }
             },
 
-            WindowEvent::MouseInput { event: MouseInput {button: winit::event::MouseButton::Code(code), .. } .. } => {
-                match state 
+            // ------------------------------------------------------- detect cursor position
+            //
+            WindowEvent::CursorMoved { position, .. } => {
+                self.input.update_cursor_pos(Pos {
+                    x: position.x as f32,
+                    y: position.y as f32,
+                });
             }
+
+            // ------------------------------------------------------- handle mouse inputs
+            //
+            WindowEvent::MouseInput { button, state, .. } => match state {
+                ElementState::Pressed => self.input.insert_button(button),
+                ElementState::Released => self.input.remove_button(button),
+            },
 
             // ------------------------------------------------------- handle key inputs
             //
@@ -113,8 +145,8 @@ impl ApplicationHandler for App {
                 ..
             } => {
                 match state {
-                    ElementState::Pressed => self.input.insert(code),
-                    ElementState::Released => self.input.remove(code),
+                    ElementState::Pressed => self.input.insert_key(code),
+                    ElementState::Released => self.input.remove_key(code),
                 };
             }
 
@@ -139,19 +171,19 @@ impl ApplicationHandler for App {
 
         // ----------------------------------------------------------- quit if key q is pressed
 
-        if self.input.has(KeyCode::KeyQ) {
+        if self.input.has_key(KeyCode::KeyQ) {
             event_loop.exit();
         }
 
         // ----------------------------------------------------------- return if paused and space is not pressed
 
-        if !self.world.is_running() && !self.input.has(KeyCode::Space) {
+        if !self.world.is_running() && !self.input.has_key(KeyCode::Space) {
             return;
         }
 
         // ----------------------------------------------------------- pause/resume if space is pressed
 
-        if self.input.has(KeyCode::Space) {
+        if self.input.has_key(KeyCode::Space) {
             self.world.toggle_running();
             return;
         }
