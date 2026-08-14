@@ -221,7 +221,7 @@ impl Renderer {
             .formats
             .iter()
             .copied()
-            .find(|f| wgpu::TextureFormat::is_srgb(f))
+            .find(wgpu::TextureFormat::is_srgb)
             .unwrap_or(surface_caps.formats[0]);
 
         let config = wgpu::SurfaceConfiguration {
@@ -254,8 +254,8 @@ impl Renderer {
             view_matrix: Mat4::IDENTITY.to_cols_array_2d(),
             projection_matrix: camera::lh::proj::directx::orthographic(
                 0.0,
-                LOGIC_WIDTH as f32,
-                LOGIC_HEIGHT as f32,
+                f32::from(LOGIC_WIDTH),
+                f32::from(LOGIC_HEIGHT),
                 0.0,
                 -1.0,
                 1.0,
@@ -448,8 +448,8 @@ impl Renderer {
             &device,
             "mid texture",
             &TextureSize {
-                width: LOGIC_WIDTH as u32,
-                height: LOGIC_HEIGHT as u32,
+                width: u32::from(LOGIC_WIDTH),
+                height: u32::from(LOGIC_HEIGHT),
             },
         );
 
@@ -696,8 +696,8 @@ impl Renderer {
 
         let projection = camera::lh::proj::directx::orthographic(
             0.0,
-            LOGIC_WIDTH as f32,
-            LOGIC_HEIGHT as f32,
+            f32::from(LOGIC_WIDTH),
+            f32::from(LOGIC_HEIGHT),
             0.0,
             -1.0,
             1.0,
@@ -969,8 +969,8 @@ fn create_pipeline_with_instance(
 // --------------------------------------------------------------- calculate viewport data for scaler
 
 fn calc_ratio(surface_width: u32, surface_height: u32) -> ViewportData {
-    let w = LOGIC_WIDTH as f32;
-    let h = LOGIC_HEIGHT as f32;
+    let w = f32::from(LOGIC_WIDTH);
+    let h = f32::from(LOGIC_HEIGHT);
 
     let surface_w = surface_width as f32;
     let surface_h = surface_height as f32;

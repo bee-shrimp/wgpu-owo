@@ -100,8 +100,8 @@ fn create_rects(
             .add_position(
                 id,
                 Pos {
-                    x: (RECT_WIDTH * (id as u8 % MAX_COL)) as f32,
-                    y: (RECT_HEIGHT * (id as u8 / MAX_COL)) as f32,
+                    x: f32::from(RECT_WIDTH * (id % MAX_COL)),
+                    y: f32::from(RECT_HEIGHT * (id / MAX_COL)),
                 },
             )
             .context("failed to add position")?;
@@ -110,8 +110,8 @@ fn create_rects(
             .add_size(
                 id,
                 Size {
-                    w: RECT_WIDTH as f32,
-                    h: RECT_HEIGHT as f32,
+                    w: f32::from(RECT_WIDTH),
+                    h: f32::from(RECT_HEIGHT),
                 },
             )
             .context("failed to add size")?;
@@ -155,7 +155,7 @@ fn build_instance_data(components: &Components) -> anyhow::Result<Vec<InstanceDa
         instances.push(InstanceData {
             position: [position.x, position.y],
             colour: colour.to_f32_array(),
-            size: [size.w as f32, size.h as f32],
+            size: [size.w, size.h],
         });
     }
 

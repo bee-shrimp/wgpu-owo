@@ -77,8 +77,8 @@ fn cursor_pos_to_world_pos(window_size: Size, cursor_pos: Pos) -> Option<Pos> {
     let h_ratio = window_size.h / f32::from(LOGIC_HEIGHT);
     let aspect_ratio = w_ratio.min(h_ratio);
 
-    let world_width = LOGIC_WIDTH as f32 * aspect_ratio;
-    let world_height = LOGIC_HEIGHT as f32 * aspect_ratio;
+    let world_width = f32::from(LOGIC_WIDTH) * aspect_ratio;
+    let world_height = f32::from(LOGIC_HEIGHT) * aspect_ratio;
 
     let offset_x = (window_size.w - world_width) / 2.0;
     let offset_y = (window_size.h - world_height) / 2.0;

@@ -4,7 +4,6 @@
 // ------------------------------------------------------------------- imports
 
 use std::sync::Arc;
-// use std::time::Instant;
 
 use anyhow::Context;
 use winit::{
@@ -34,7 +33,6 @@ struct App {
     renderer: Option<Renderer>,
     world: World,
     input: InputHandler,
-    // last_frame_time: Option<Instant>,
 }
 
 impl ApplicationHandler for App {
@@ -76,10 +74,6 @@ impl ApplicationHandler for App {
             .as_mut()
             .expect("failed to find renderer")
             .update(instances);
-
-        // ----------------------------------------------------------- init other fields
-
-        // self.last_frame_time = Some(Instant::now());
     }
 
     // --------------------------------------------------------------- handle window events
@@ -110,7 +104,7 @@ impl ApplicationHandler for App {
             // ------------------------------------------------------- redraw
             //
             WindowEvent::RedrawRequested => match renderer.render() {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(e) => {
                     log::error!("{e}");
                     event_loop.exit();
@@ -156,17 +150,6 @@ impl ApplicationHandler for App {
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         //
-        // ----------------------------------------------------------- calculate dt
-
-        // let now = Instant::now();
-        // let dt = if let Some(last) = self.last_frame_time {
-        //     now.duration_since(last).as_secs_f32().min(0.1)
-        // } else {
-        //     0.016 // fps60
-        // };
-        //
-        // self.last_frame_time = Some(now);
-
         // ----------------------------------------------------------- quit if key q is pressed
 
         if self.input.has_key(KeyCode::KeyQ) {
