@@ -5,7 +5,10 @@ use anyhow::Context;
 use std::borrow::Cow;
 use std::mem;
 
-use wgpu::util::DeviceExt;
+use wgpu::{
+    BackendOptions, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions,
+    util::DeviceExt,
+};
 use winit::event_loop::ActiveEventLoop;
 
 use glam::{
@@ -15,7 +18,7 @@ use glam::{
 
 use crate::{
     Arc, Window,
-    world::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_SIZE},
+    world::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH},
 };
 
 // ------------------------------------------------------------------- texture size for create_texture()
@@ -50,7 +53,7 @@ impl Vertex {
         wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2];
     // 0 => Vertex::position, 1 => Vertex::uv
 
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
+    const fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -84,15 +87,15 @@ const RECT_VERTICES: &[Vertex] = &[
         uv: [0.0, 0.0], // top left
     },
     Vertex {
-        position: [0.0, RECT_SIZE as f32],
+        position: [0.0, RECT_HEIGHT as f32],
         uv: [0.0, 1.0], // bottom left
     },
     Vertex {
-        position: [RECT_SIZE as f32, 0.0],
+        position: [RECT_WIDTH as f32, 0.0],
         uv: [1.0, 0.0], // top right
     },
     Vertex {
-        position: [RECT_SIZE as f32, RECT_SIZE as f32],
+        position: [RECT_WIDTH as f32, RECT_HEIGHT as f32],
         uv: [1.0, 1.0], // bottom right
     },
 ];
@@ -116,7 +119,7 @@ impl InstanceData {
         wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x3, 4 => Float32x2];
     // 0 => InstaceData::position, 1 => InstanceData::colour, 2 => InstanceData::size
 
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
+    const fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
@@ -172,7 +175,7 @@ impl Renderer {
         window: Arc<Window>,
         event_loop: &ActiveEventLoop,
         instances: &[InstanceData],
-    ) -> anyhow::Result<Renderer> {
+    ) -> anyhow::Result<Self> {
         // ----------------------------------------------------------- size of window
 
         let size = window.inner_size();
@@ -181,9 +184,9 @@ impl Renderer {
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::GL,
-            flags: Default::default(),
-            memory_budget_thresholds: Default::default(),
-            backend_options: Default::default(),
+            flags: InstanceFlags::default(),
+            memory_budget_thresholds: MemoryBudgetThresholds::default(),
+            backend_options: BackendOptions::default(),
             display: Some(Box::new(event_loop.owned_display_handle())),
         });
 
@@ -218,7 +221,7 @@ impl Renderer {
             .formats
             .iter()
             .copied()
-            .find(|f| f.is_srgb())
+            .find(|f| wgpu::TextureFormat::is_srgb(f))
             .unwrap_or(surface_caps.formats[0]);
 
         let config = wgpu::SurfaceConfiguration {
@@ -300,7 +303,7 @@ impl Renderer {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let num_indices = RECT_INDICES.len() as u32;
+        let num_indices = u32::try_from(RECT_INDICES.len()).context("conversion error")?;
 
         // ----------------------------------------------------------- samplers
 
@@ -445,8 +448,8 @@ impl Renderer {
             &device,
             "mid texture",
             &TextureSize {
-                width: LOGIC_WIDTH,
-                height: LOGIC_HEIGHT,
+                width: LOGIC_WIDTH as u32,
+                height: LOGIC_HEIGHT as u32,
             },
         );
 
@@ -493,12 +496,12 @@ impl Renderer {
                     module: &scaler_shader,
                     entry_point: Some("vs_main"),
                     buffers: &[Some(Vertex::desc())],
-                    compilation_options: Default::default(),
+                    compilation_options: PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &scaler_shader,
                     entry_point: Some("fs_main"),
-                    compilation_options: Default::default(),
+                    compilation_options: PipelineCompilationOptions::default(),
                     targets: &[Some(swapchain_format.into())],
                 }),
                 primitive: wgpu::PrimitiveState::default(),
@@ -510,7 +513,7 @@ impl Renderer {
 
         // ----------------------------------------------------------- renderer
 
-        let renderer = Renderer {
+        let renderer = Self {
             window,
             device,
             queue,
@@ -541,7 +544,7 @@ impl Renderer {
         Ok(renderer)
     }
 
-    pub fn render(&mut self) -> anyhow::Result<()> {
+    pub fn render(&self) -> anyhow::Result<()> {
         if !self.is_surface_configured {
             return Ok(());
         }
@@ -550,8 +553,8 @@ impl Renderer {
         // ----------------------------------------------------------- surface texture view
 
         let surface_texture = match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
-            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Success(surface_texture)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
             wgpu::CurrentSurfaceTexture::Timeout
             | wgpu::CurrentSurfaceTexture::Occluded
             | wgpu::CurrentSurfaceTexture::Validation => {
@@ -607,7 +610,11 @@ impl Renderer {
         mid_renderpass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
         mid_renderpass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         mid_renderpass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        mid_renderpass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as u32);
+        mid_renderpass.draw_indexed(
+            0..self.num_indices,
+            0,
+            0..u32::try_from(self.instances.len()).context("conversion error")?,
+        );
 
         // ----------------------------------------------------------- end the renderpass
 
@@ -804,7 +811,7 @@ fn create_u_bind_group(
 ) -> wgpu::BindGroup {
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some(label),
-        layout: &bind_group_layout,
+        layout: bind_group_layout,
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
@@ -827,15 +834,15 @@ fn create_t_s_bind_group(
 ) -> wgpu::BindGroup {
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some(label),
-        layout: &bind_group_layout,
+        layout: bind_group_layout,
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(&resource),
+                resource: wgpu::BindingResource::TextureView(resource),
             },
             wgpu::BindGroupEntry {
                 binding: 1,
-                resource: wgpu::BindingResource::Sampler(&sampler),
+                resource: wgpu::BindingResource::Sampler(sampler),
             },
         ],
     })
@@ -853,7 +860,7 @@ fn create_t_s_bind_group(
 // ) -> wgpu::BindGroup {
 //     device.create_bind_group(&wgpu::BindGroupDescriptor {
 //         label: Some(label),
-//         layout: &bind_group_layout,
+//         layout: bind_group_layout,
 //         entries: &[
 //             wgpu::BindGroupEntry {
 //                 binding: 0,
@@ -894,15 +901,15 @@ fn create_t_s_bind_group(
 //         label: Some(label),
 //         layout: Some(&new_pipeline_layout),
 //         vertex: wgpu::VertexState {
-//             module: &shader,
+//             module: shader,
 //             entry_point: Some("vs_main"),
 //             buffers: &[Some(Vertex::desc())],
-//             compilation_options: Default::default(),
+//             compilation_options: PipelineCompilationOptions::default(),
 //         },
 //         fragment: Some(wgpu::FragmentState {
-//             module: &shader,
+//             module: shader,
 //             entry_point: Some("fs_main"),
-//             compilation_options: Default::default(),
+//             compilation_options: PipelineCompilationOptions::default(),
 //             targets: &[Some(wgpu::ColorTargetState {
 //                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
 //                 blend: Some(blend_state),
@@ -936,15 +943,15 @@ fn create_pipeline_with_instance(
         label: Some(label),
         layout: Some(&new_pipeline_layout),
         vertex: wgpu::VertexState {
-            module: &shader,
+            module: shader,
             entry_point: Some("vs_main"),
             buffers: &[Some(Vertex::desc()), Some(InstanceData::desc())],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
-            module: &shader,
+            module: shader,
             entry_point: Some("fs_main"),
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: Some(blend_state),

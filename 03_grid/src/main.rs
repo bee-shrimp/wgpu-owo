@@ -4,7 +4,7 @@
 // ------------------------------------------------------------------- imports
 
 use std::sync::Arc;
-use std::time::Instant;
+// use std::time::Instant;
 
 use anyhow::Context;
 use winit::{
@@ -34,7 +34,7 @@ struct App {
     renderer: Option<Renderer>,
     world: World,
     input: InputHandler,
-    last_frame_time: Option<Instant>,
+    // last_frame_time: Option<Instant>,
 }
 
 impl ApplicationHandler for App {
@@ -59,14 +59,14 @@ impl ApplicationHandler for App {
         let window_size = window.inner_size();
 
         self.input = InputHandler::new(Size {
-            w: window_size.width,
-            h: window_size.height,
+            w: window_size.width as f32,
+            h: window_size.height as f32,
         });
 
         // ----------------------------------------------------------- create renderer
 
         self.renderer = Some(
-            pollster::block_on(Renderer::new(window, event_loop, &instances))
+            pollster::block_on(Renderer::new(window, event_loop, instances))
                 .expect("failed to create renderer"),
         );
 
@@ -75,11 +75,11 @@ impl ApplicationHandler for App {
         self.renderer
             .as_mut()
             .expect("failed to find renderer")
-            .update(&instances);
+            .update(instances);
 
         // ----------------------------------------------------------- init other fields
 
-        self.last_frame_time = Some(Instant::now());
+        // self.last_frame_time = Some(Instant::now());
     }
 
     // --------------------------------------------------------------- handle window events
@@ -102,8 +102,8 @@ impl ApplicationHandler for App {
             WindowEvent::Resized(size) => {
                 renderer.resize(size.width, size.height);
                 self.input.resize(Size {
-                    w: size.width,
-                    h: size.height,
+                    w: size.width as f32,
+                    h: size.height as f32,
                 });
             }
 
@@ -143,12 +143,10 @@ impl ApplicationHandler for App {
                         ..
                     },
                 ..
-            } => {
-                match state {
-                    ElementState::Pressed => self.input.insert_key(code),
-                    ElementState::Released => self.input.remove_key(code),
-                };
-            }
+            } => match state {
+                ElementState::Pressed => self.input.insert_key(code),
+                ElementState::Released => self.input.remove_key(code),
+            },
 
             _ => (),
         }
@@ -160,14 +158,14 @@ impl ApplicationHandler for App {
         //
         // ----------------------------------------------------------- calculate dt
 
-        let now = Instant::now();
-        let dt = if let Some(last) = self.last_frame_time {
-            now.duration_since(last).as_secs_f32().min(0.1)
-        } else {
-            0.016 // fps60
-        };
-
-        self.last_frame_time = Some(now);
+        // let now = Instant::now();
+        // let dt = if let Some(last) = self.last_frame_time {
+        //     now.duration_since(last).as_secs_f32().min(0.1)
+        // } else {
+        //     0.016 // fps60
+        // };
+        //
+        // self.last_frame_time = Some(now);
 
         // ----------------------------------------------------------- quit if key q is pressed
 
@@ -188,15 +186,23 @@ impl ApplicationHandler for App {
             return;
         }
 
+        // ----------------------------------------------------------- get click pos
+
+        let Some(click_pos) = self.input.get_button_pos(winit::event::MouseButton::Left) else {
+            return;
+        };
+
         // ----------------------------------------------------------- update
 
         let renderer = self.renderer.as_mut().expect("failed to find renderer");
 
-        self.world.update(dt);
+        self.world
+            .update(click_pos)
+            .expect("failed to update world");
 
         let instances = self.world.get_instances();
-        renderer.update(&instances);
-        renderer.get_window().request_redraw()
+        renderer.update(instances);
+        renderer.get_window().request_redraw();
     }
 }
 
