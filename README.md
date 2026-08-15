@@ -79,3 +79,19 @@ what it does:
 - draw colourful grids.  
 - clicking changes the colour of grid.  
 
+how it works:  
+
+- grids are managed with ecs.  
+- InputHandler converts click position to world coord.  
+- ReactSystem converts world coord to grid coord and change the colour.  
+
+what i learnt:  
+
+- basics of grid system.  
+- how to manage mouse inputs.  
+
+## 04_sprites
+
+what it does:  
+
+- draw various sprites.  

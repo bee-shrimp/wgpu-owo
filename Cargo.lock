@@ -2539,6 +2539,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sprites"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "env_logger",
+ "glam",
+ "image",
+ "log",
+ "pollster",
+ "rand 0.10.2",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
