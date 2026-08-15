@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------- imports
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use winit::{event::MouseButton, keyboard::KeyCode};
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 #[derive(Default)]
 pub struct InputHandler {
     pressed_keys: HashSet<KeyCode>,
-    pressed_buttons: HashMap<MouseButton, Pos>,
+    pressed_buttons: [Option<Pos>; 2], // [0] left, [1] right,
     cursor_pos: Pos,
     window_size: Size,
 }
@@ -24,7 +24,7 @@ impl InputHandler {
     pub fn new(window_size: Size) -> Self {
         Self {
             pressed_keys: HashSet::new(),
-            pressed_buttons: HashMap::new(),
+            pressed_buttons: [None, None],
             cursor_pos: Pos::default(),
             window_size,
         }
@@ -59,16 +59,27 @@ impl InputHandler {
         };
 
         // println!("{:?}", world_pos);
-
-        self.pressed_buttons.insert(button, world_pos);
+        match button {
+            MouseButton::Left => self.pressed_buttons[0] = Some(world_pos),
+            MouseButton::Right => self.pressed_buttons[1] = Some(world_pos),
+            _ => {}
+        }
     }
 
-    pub fn remove_button(&mut self, button: MouseButton) {
-        self.pressed_buttons.remove(&button);
+    pub const fn remove_button(&mut self, button: MouseButton) {
+        match button {
+            MouseButton::Left => self.pressed_buttons[0] = None,
+            MouseButton::Right => self.pressed_buttons[1] = None,
+            _ => {}
+        }
     }
 
-    pub fn get_button_pos(&self, button: MouseButton) -> Option<Pos> {
-        self.pressed_buttons.get(&button).copied()
+    pub const fn get_button_pos(&self, button: MouseButton) -> Option<Pos> {
+        match button {
+            MouseButton::Left => self.pressed_buttons[0],
+            MouseButton::Right => self.pressed_buttons[1],
+            _ => None,
+        }
     }
 }
 

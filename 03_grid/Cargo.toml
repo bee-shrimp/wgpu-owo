@@ -21,23 +21,5 @@ bytemuck = { version = "1.25", features = [ "derive" ] }
 glam = "0.33"
 rand = "0.10.2"
 
-[lints.clippy]
-pedantic = { level = "deny", priority = -1 }
-nursery = { level = "deny", priority = -1 }
-unwrap_used = "deny"
-unreachable = "deny"
-unimplemented = "deny"
-unchecked_time_subtraction = "deny"
-string_slice = "deny"
-panic_in_result_fn = "deny"
-panic = "deny"
-exit = "deny"
-# expect_used = "deny"
-# as_conversions = "deny"
-# indexing_slicing = "deny"
-# arithmetic_side_effects = "deny"
-# todo = "deny"
-future_not_send = "allow"
-cast_possible_truncation = "allow"
-cast_precision_loss= "allow"
-cast_sign_loss = "allow"
+[lints]
+workspace = true

@@ -51,7 +51,7 @@ impl World {
     pub fn init(&mut self) -> anyhow::Result<()> {
         create_rects(&mut self.entity_manager, &mut self.components)
             .context("failed to create rects")?;
-        self.update_instances()?;
+        self.update_instances();
         Ok(())
     }
 
@@ -60,16 +60,14 @@ impl World {
         // println!("{:?}", click_pos);
         ReactSystem::update(&mut self.components, click_pos)?;
 
-        self.update_instances()?;
+        self.update_instances();
 
         Ok(())
     }
 
-    pub fn update_instances(&mut self) -> anyhow::Result<()> {
+    pub fn update_instances(&mut self) {
         self.instances.clear();
-        self.instances =
-            build_instance_data(&self.components).context("failed to build instance data")?;
-        Ok(())
+        self.instances = build_instance_data(&self.components);
     }
 
     pub const fn toggle_running(&mut self) {
@@ -100,8 +98,12 @@ fn create_rects(
             .add_position(
                 id,
                 Pos {
-                    x: f32::from(RECT_WIDTH * (id % MAX_COL)),
-                    y: f32::from(RECT_HEIGHT * (id / MAX_COL)),
+                    x: f32::from(
+                        RECT_WIDTH * (u8::try_from(id).context("conversion error")? % MAX_COL),
+                    ),
+                    y: f32::from(
+                        RECT_HEIGHT * (u8::try_from(id).context("conversion error")? / MAX_COL),
+                    ),
                 },
             )
             .context("failed to add position")?;
@@ -130,23 +132,21 @@ fn create_rects(
     Ok(())
 }
 
-fn build_instance_data(components: &Components) -> anyhow::Result<Vec<InstanceData>> {
+fn build_instance_data(components: &Components) -> Vec<InstanceData> {
     let mut instances = Vec::new();
 
     for id in 0..components.max_entities {
         // ----------------------------------------------------------- get data from vec[id]
 
-        let Some(position) = components.get_position(u8::try_from(id).context("conversion error")?)
-        else {
+        let Some(position) = components.get_position(id) else {
             continue;
         };
 
-        let Some(size) = components.get_size(u8::try_from(id).context("conversion error")?) else {
+        let Some(size) = components.get_size(id) else {
             continue;
         };
 
-        let Some(colour) = components.get_colour(u8::try_from(id).context("conversion error")?)
-        else {
+        let Some(colour) = components.get_colour(id) else {
             continue;
         };
 
@@ -159,5 +159,5 @@ fn build_instance_data(components: &Components) -> anyhow::Result<Vec<InstanceDa
         });
     }
 
-    Ok(instances)
+    instances
 }
