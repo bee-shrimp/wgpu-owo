@@ -109,16 +109,17 @@ const RECT_INDICES: &[u16] = &[0, 1, 2, /**/ 1, 3, 2];
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct InstanceData {
     pub position: [f32; 2], // x, y
-    pub colour: [f32; 3],   // r, g, b
     pub size: [f32; 2],     // w, h
+    pub sprite_offset: [f32; 2],
+    pub sprite_size: [f32; 2],
 }
 
 // ------------------------------------------------------------------- descriptor for VertexBufferLayout
 
 impl InstanceData {
-    const ATTRIBS: [wgpu::VertexAttribute; 3] =
-        wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x3, 4 => Float32x2];
-    // 0 => InstaceData::position, 1 => InstanceData::colour, 2 => InstanceData::size
+    const ATTRIBS: [wgpu::VertexAttribute; 4] =
+        wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x2, 4 => Float32x2, 5 => Float32x2];
+    // 2 => InstaceData::position, 3 => InstanceData::size, 4 => sprite_offset, 5 => sprite_size
 
     const fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
@@ -183,7 +184,7 @@ impl Renderer {
 
         // ----------------------------------------------------------- create a new wgpu instance
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let wgpu_instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::GL,
             flags: InstanceFlags::default(),
             memory_budget_thresholds: MemoryBudgetThresholds::default(),
@@ -193,7 +194,7 @@ impl Renderer {
 
         // ----------------------------------------------------------- physical device
 
-        let adapter = instance
+        let adapter = wgpu_instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: None,
@@ -212,7 +213,7 @@ impl Renderer {
 
         // ----------------------------------------------------------- surface to draw onto
 
-        let surface = instance
+        let surface = wgpu_instance
             .create_surface(window.clone())
             .context("failed to create surface")?;
 
@@ -436,7 +437,7 @@ impl Renderer {
         //     });
 
         // --------------------------------------------------------------------------- load image
-        let diffuse_bytes = include_bytes!("../img/fish.png");
+        let diffuse_bytes = include_bytes!("../img/flowers.png");
 
         let diffuse_texture_view =
             create_diffuse_texture(&device, &queue, "diffuse texture", diffuse_bytes)?;

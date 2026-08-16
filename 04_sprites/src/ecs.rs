@@ -2,7 +2,7 @@
 
 use anyhow::Context;
 
-use crate::world::{MAX_COL, NUM_GRIDS, RECT_HEIGHT, RECT_WIDTH};
+use crate::world::{MAX_COL, NUM_RECTS, RECT_HEIGHT, RECT_WIDTH, Sprite};
 
 // ------------------------------------------------------------------- struct for rects
 
@@ -18,27 +18,10 @@ pub struct Size {
     pub h: f32,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Colour {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-}
-
-impl Colour {
-    pub fn to_f32_array(self) -> [f32; 3] {
-        [
-            f32::from(self.r) / 255.0,
-            f32::from(self.g) / 255.0,
-            f32::from(self.b) / 255.0,
-        ]
-    }
-}
-
 // ------------------------------------------------------------------- entity manager struct
 
 pub struct EntityManager {
-    next_id: usize,
+    next_id: u8,
     free_list: Vec<usize>,
 }
 
@@ -54,9 +37,9 @@ impl EntityManager {
 
     // --------------------------------------------------------------- return id
 
-    pub fn spawn(&mut self) -> usize {
+    pub fn spawn(&mut self) -> u8 {
         if let Some(id) = self.free_list.pop() {
-            id
+            id as u8
         } else {
             let id = self.next_id;
             self.next_id += 1;
@@ -76,68 +59,68 @@ impl EntityManager {
 pub struct Components {
     positions: Vec<Option<Pos>>,
     sizes: Vec<Option<Size>>,
-    colours: Vec<Option<Colour>>,
-    pub max_entities: usize,
+    sprites: Vec<Option<Sprite>>,
+    pub max_entities: u8,
 }
 
 impl Components {
     // --------------------------------------------------------------- create new components struct
 
     pub fn new() -> Self {
-        let max_entities = usize::from(NUM_GRIDS);
+        let max_entities = usize::from(NUM_RECTS);
         Self {
             positions: vec![None; max_entities],
             sizes: vec![None; max_entities],
-            colours: vec![None; max_entities],
-            max_entities,
+            sprites: vec![None; max_entities],
+            max_entities: NUM_RECTS,
         }
     }
 
     // --------------------------------------------------------------- add Some(x) to vec[id]
 
-    pub fn add_position(&mut self, id: usize, pos: Pos) -> anyhow::Result<()> {
+    pub fn add_position(&mut self, id: u8, pos: Pos) -> anyhow::Result<()> {
         if id >= self.max_entities {
             anyhow::bail!("entity id over flow");
         }
 
-        self.positions[id] = Some(pos);
+        self.positions[id as usize] = Some(pos);
         Ok(())
     }
 
-    pub fn add_size(&mut self, id: usize, size: Size) -> anyhow::Result<()> {
+    pub fn add_size(&mut self, id: u8, size: Size) -> anyhow::Result<()> {
         if id >= self.max_entities {
             anyhow::bail!("entity id over flow")
         }
-        self.sizes[id] = Some(size);
+        self.sizes[id as usize] = Some(size);
 
         Ok(())
     }
 
-    pub fn add_colour(&mut self, id: usize, colour: Colour) -> anyhow::Result<()> {
+    pub fn add_sprite(&mut self, id: u8, sprite: Sprite) -> anyhow::Result<()> {
         if id >= self.max_entities {
             anyhow::bail!("entity id over flow")
         }
-        self.colours[id] = Some(colour);
+        self.sprites[id as usize] = Some(sprite);
 
         Ok(())
     }
 
     // --------------------------------------------------------------- get Some(x) in vec[id]
 
-    pub fn get_position(&self, id: usize) -> Option<&Pos> {
-        self.positions.get(id).and_then(|p| p.as_ref())
+    pub fn get_position(&self, id: u8) -> Option<&Pos> {
+        self.positions.get(id as usize).and_then(|p| p.as_ref())
     }
 
-    pub fn get_size(&self, id: usize) -> Option<&Size> {
-        self.sizes.get(id).and_then(|s| s.as_ref())
+    pub fn get_size(&self, id: u8) -> Option<&Size> {
+        self.sizes.get(id as usize).and_then(|s| s.as_ref())
     }
 
-    pub fn get_colour(&self, id: usize) -> Option<&Colour> {
-        self.colours.get(id).and_then(|c| c.as_ref())
+    pub fn get_sprite(&self, id: u8) -> Option<&Sprite> {
+        self.sprites.get(id as usize).and_then(|s| s.as_ref())
     }
 
-    pub fn get_colour_mut(&mut self, id: usize) -> Option<&mut Colour> {
-        self.colours.get_mut(id).and_then(|c| c.as_mut())
+    pub fn get_sprite_mut(&mut self, id: u8) -> Option<&mut Sprite> {
+        self.sprites.get_mut(id as usize).and_then(|s| s.as_mut())
     }
 }
 
@@ -150,17 +133,18 @@ impl ReactSystem {
         let gx = (click_pos.x / f32::from(RECT_WIDTH)).floor() as u8;
         let gy = (click_pos.y / f32::from(RECT_HEIGHT)).floor() as u8;
 
-        let idx = usize::from(gy * MAX_COL + gx);
+        let idx = gy * MAX_COL + gx;
 
-        let new_colour = Colour {
-            r: 255,
-            g: 255,
-            b: 255,
+        let sprite = components.get_sprite(idx).context("failed to get sprite")?;
+
+        let new_sprite = match sprite {
+            Sprite::RedFlower => Sprite::YellowFlower,
+            Sprite::YellowFlower => Sprite::RedFlower,
         };
 
         *components
-            .get_colour_mut(idx)
-            .context("failed to get colour mut")? = new_colour;
+            .get_sprite_mut(idx)
+            .context("failed to get sprite mut")? = new_sprite;
 
         Ok(())
     }
