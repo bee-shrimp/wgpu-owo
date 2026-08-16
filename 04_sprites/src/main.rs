@@ -8,7 +8,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use winit::{
     application::ApplicationHandler,
-    event::{ElementState, KeyEvent, WindowEvent},
+    event::{ElementState, KeyEvent, MouseButton, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
@@ -123,8 +123,8 @@ impl ApplicationHandler for App {
             // ------------------------------------------------------- handle mouse inputs
             //
             WindowEvent::MouseInput { button, state, .. } => match state {
-                ElementState::Pressed => self.input.insert_button(button),
-                ElementState::Released => self.input.remove_button(button),
+                ElementState::Pressed => self.input.button_pressed(button),
+                ElementState::Released => self.input.button_released(button),
             },
 
             // ------------------------------------------------------- handle key inputs
@@ -169,21 +169,29 @@ impl ApplicationHandler for App {
             return;
         }
 
-        // ----------------------------------------------------------- get click pos
+        // ----------------------------------------------------------- mouse state update
 
-        let Some(click_pos) = self.input.get_button_pos(winit::event::MouseButton::Left) else {
+        self.input.update_mouse_state();
+        if !self.input.has_triggered(MouseButton::Left) {
             return;
         };
+
+        // ----------------------------------------------------------- update world if clicked
+
+        let click_pos = self
+            .input
+            .get_click_pos(MouseButton::Left)
+            .expect("failed to get click pos");
+        self.world
+            .update(click_pos)
+            .expect("failed to update world");
 
         // ----------------------------------------------------------- update
 
         let renderer = self.renderer.as_mut().expect("failed to find renderer");
 
-        self.world
-            .update(click_pos)
-            .expect("failed to update world");
-
         let instances = self.world.get_instances();
+
         renderer.update(instances);
         renderer.get_window().request_redraw();
     }

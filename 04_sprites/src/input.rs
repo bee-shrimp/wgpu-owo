@@ -8,12 +8,22 @@ use crate::{
     world::{LOGIC_HEIGHT, LOGIC_WIDTH},
 };
 
+// ------------------------------------------------------------------- mouse state
+
+#[derive(Default)]
+struct MouseState {
+    is_pressed: bool,
+    was_pressed: bool,
+    has_triggered: bool,
+    pos: Option<Pos>,
+}
+
 // ------------------------------------------------------------------- input handler
 
 #[derive(Default)]
 pub struct InputHandler {
     pressed_keys: HashSet<KeyCode>,
-    pressed_buttons: [Option<Pos>; 2], // [0] left, [1] right,
+    mouse_left: MouseState,
     cursor_pos: Pos,
     window_size: Size,
 }
@@ -24,13 +34,13 @@ impl InputHandler {
     pub fn new(window_size: Size) -> Self {
         Self {
             pressed_keys: HashSet::new(),
-            pressed_buttons: [None, None],
+            mouse_left: MouseState::default(),
             cursor_pos: Pos::default(),
             window_size,
         }
     }
 
-    pub const fn resize(&mut self, window_size: Size) {
+    pub fn resize(&mut self, window_size: Size) {
         self.window_size = window_size;
     }
 
@@ -46,38 +56,47 @@ impl InputHandler {
         self.pressed_keys.contains(&code)
     }
 
-    pub const fn update_cursor_pos(&mut self, pos: Pos) {
+    pub fn update_cursor_pos(&mut self, pos: Pos) {
         self.cursor_pos = pos;
     }
 
-    pub fn insert_button(&mut self, button: MouseButton) {
-        // println!("{:?}", self.cursor_pos);
+    pub fn update_mouse_state(&mut self) {
+        self.mouse_left.has_triggered = !self.mouse_left.was_pressed && self.mouse_left.is_pressed;
+        if self.mouse_left.has_triggered {
+            self.mouse_left.pos = cursor_pos_to_world_pos(self.window_size, self.cursor_pos);
+        }
 
-        let Some(world_pos) = cursor_pos_to_world_pos(self.window_size, self.cursor_pos) else {
-            // println!("none");
-            return;
-        };
+        self.mouse_left.was_pressed = self.mouse_left.is_pressed;
+    }
 
-        // println!("{:?}", world_pos);
+    pub fn button_pressed(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => self.pressed_buttons[0] = Some(world_pos),
-            MouseButton::Right => self.pressed_buttons[1] = Some(world_pos),
+            MouseButton::Left => {
+                self.mouse_left.is_pressed = true;
+            }
             _ => {}
         }
     }
 
-    pub const fn remove_button(&mut self, button: MouseButton) {
+    pub fn button_released(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => self.pressed_buttons[0] = None,
-            MouseButton::Right => self.pressed_buttons[1] = None,
+            MouseButton::Left => {
+                self.mouse_left.is_pressed = false;
+            }
             _ => {}
         }
     }
 
-    pub const fn get_button_pos(&self, button: MouseButton) -> Option<Pos> {
+    pub fn has_triggered(&mut self, button: MouseButton) -> bool {
         match button {
-            MouseButton::Left => self.pressed_buttons[0],
-            MouseButton::Right => self.pressed_buttons[1],
+            MouseButton::Left => self.mouse_left.has_triggered,
+            _ => false,
+        }
+    }
+
+    pub fn get_click_pos(&self, button: MouseButton) -> Option<Pos> {
+        match button {
+            MouseButton::Left => self.mouse_left.pos,
             _ => None,
         }
     }

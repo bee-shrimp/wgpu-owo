@@ -12,10 +12,7 @@ use wgpu::{
 };
 use winit::event_loop::ActiveEventLoop;
 
-use glam::{
-    Mat4, Vec3,
-    camera::{self},
-};
+use glam::{Mat4, Vec3, camera};
 
 use crate::{
     Arc, Window,
@@ -130,7 +127,7 @@ impl InstanceData {
     }
 }
 
-// ------------------------------------------------------------------- viewport data for scaler renderpass
+// ------------------------------------------------------------------- viewport for scaler renderpass
 
 struct ViewportData {
     x: f32,
