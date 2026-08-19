@@ -60,7 +60,7 @@ impl Vertex {
     }
 }
 
-// ------------------------------------------------------------------- fullscreen triangle
+// ------------------------------------------------------------------- full screen triangle
 
 const FULLSCREEN_VERTICES: &[Vertex] = &[
     Vertex {
@@ -116,7 +116,7 @@ pub struct InstanceData {
 impl InstanceData {
     const ATTRIBS: [wgpu::VertexAttribute; 4] =
         wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x2, 4 => Float32x2, 5 => Float32x2];
-    // 2 => InstaceData::position, 3 => InstanceData::size, 4 => sprite_offset, 5 => sprite_size
+    // 2 => InstanceData::position, 3 => InstanceData::size, 4 => sprite_offset, 5 => sprite_size
 
     const fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
@@ -199,7 +199,7 @@ impl Renderer {
                 apply_limit_buckets: true,
             })
             .await
-            .context("failed to request addapter")?;
+            .context("failed to request adapter")?;
 
         // ----------------------------------------------------------- logical device
 
@@ -290,7 +290,7 @@ impl Renderer {
         let instances = instances.to_vec();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("instance bufer"),
+            label: Some("instance buffer"),
             contents: bytemuck::cast_slice(&instances),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });

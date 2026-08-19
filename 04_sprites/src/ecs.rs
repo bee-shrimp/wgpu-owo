@@ -22,7 +22,7 @@ pub struct Size {
 
 pub struct EntityManager {
     next_id: u8,
-    free_list: Vec<usize>,
+    free_list: Vec<u8>,
 }
 
 impl EntityManager {
@@ -39,7 +39,7 @@ impl EntityManager {
 
     pub fn spawn(&mut self) -> u8 {
         if let Some(id) = self.free_list.pop() {
-            id as u8
+            id
         } else {
             let id = self.next_id;
             self.next_id += 1;

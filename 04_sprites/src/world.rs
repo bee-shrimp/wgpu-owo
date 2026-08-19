@@ -25,7 +25,7 @@ pub const NUM_RECTS: u8 = MAX_COL * MAX_ROW;
 
 // ------------------------------------------------------------------- sprite
 
-const SPRITE_SHEET_SIZE: u8 = 255;
+const SPRITE_SHEET_SIZE: u16 = 256;
 const SPRITE_GRID_SIZE: u8 = 16;
 
 // ------------------------------------------------------------------- struct for sprites
