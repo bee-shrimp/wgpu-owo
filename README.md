@@ -20,7 +20,7 @@ what i did:
 - add delta time.  
 - add world struct.  
 - add pause by adding is_running field to World.  
-- add need_redraw field to App to avoid unnessesary redraw.  
+- add need_redraw field to App to avoid unnecessary redraw.  
 
 what i learnt:  
 
@@ -56,7 +56,7 @@ what it does:
 
 - draw many rects with random position, size, and colour.  
 - rects fall down with wavy move.  
-- (rects are managed with rudimentry ecs system)
+- (rects are managed with rudimentary ecs system)
 
 how it works:  
 
@@ -94,4 +94,17 @@ what i learnt:
 
 what it does:  
 
-- draw various sprites.  
+- draw grids with flower sprites.  
+- clicking changes the sprite.  
+
+how it works:  
+
+- world.rs has Sprite enum.  
+- world has sprite_data array, which has SpriteData for each sprite.  
+- SpriteData has uv_offset and uv_size.  
+- world.build_instance_data use sprite_data array to add sprite data.  
+- wgsl uses these data to sample the right area from sprite sheet.  
+
+what i learnt:  
+
+- basics of texture atlas.  
