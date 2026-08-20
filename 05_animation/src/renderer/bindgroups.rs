@@ -1,4 +1,4 @@
-use crate::renderer::Uniforms;
+use crate::renderer::buffers::Uniforms;
 
 // pub fn create_u_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
 //     // ----------------------------------------------------------- bind group w/ uniform

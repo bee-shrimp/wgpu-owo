@@ -97,7 +97,7 @@ impl InputHandler {
     }
 
     /// returns if mouse was clicked.
-    pub fn has_triggered(&mut self, button: MouseButton) -> bool {
+    pub fn has_triggered(&self, button: MouseButton) -> bool {
         match button {
             MouseButton::Left => self.mouse_left.has_triggered,
             _ => false,

@@ -76,3 +76,19 @@ pub async fn init_wgpu(
     };
     Ok((adapter, device, queue, surface, config))
 }
+
+pub fn create_sampler(
+    device: &wgpu::Device,
+    filter_mode: wgpu::FilterMode,
+    mipmap_filter_mode: wgpu::MipmapFilterMode,
+) -> wgpu::Sampler {
+    device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: filter_mode,
+        min_filter: filter_mode,
+        mipmap_filter: mipmap_filter_mode,
+        ..Default::default()
+    })
+}
