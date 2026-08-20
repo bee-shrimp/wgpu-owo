@@ -18,9 +18,7 @@ pub const MAX_ROW: u8 = 4;
 // ------------------------------------------------------------------- consts for rect
 
 pub const RECT_WIDTH: u8 = LOGIC_WIDTH / MAX_COL;
-
 pub const RECT_HEIGHT: u8 = LOGIC_HEIGHT / MAX_ROW;
-
 pub const NUM_RECTS: u8 = MAX_COL * MAX_ROW;
 
 // ------------------------------------------------------------------- sprite
@@ -117,6 +115,7 @@ impl World {
             .context("failed to create rects")?;
 
         self.update_instances()?;
+
         Ok(())
     }
 
@@ -130,13 +129,14 @@ impl World {
 
     pub fn update_instances(&mut self) -> anyhow::Result<()> {
         self.instances.clear();
+
         self.instances
             .extend(build_instance_data(&self.components, self.sprite_data)?);
 
         Ok(())
     }
 
-    pub const fn toggle_running(&mut self) {
+    pub fn toggle_running(&mut self) {
         self.is_running = !self.is_running;
     }
 
@@ -144,7 +144,7 @@ impl World {
         &self.instances
     }
 
-    pub const fn is_running(&self) -> bool {
+    pub fn is_running(&self) -> bool {
         self.is_running
     }
 }

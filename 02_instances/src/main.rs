@@ -122,7 +122,7 @@ impl ApplicationHandler for App {
         }
     }
 
-    // --------------------------------------------------------------- things to do after everyting else
+    // --------------------------------------------------------------- things to do after everything else
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         //
