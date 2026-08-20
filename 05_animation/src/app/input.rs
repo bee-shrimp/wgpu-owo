@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use winit::{event::MouseButton, keyboard::KeyCode};
 
 use crate::{
+    config::{LOGIC_HEIGHT, LOGIC_WIDTH},
     ecs::{Pos, Size},
-    world::{LOGIC_HEIGHT, LOGIC_WIDTH},
 };
 
 // ------------------------------------------------------------------- mouse state

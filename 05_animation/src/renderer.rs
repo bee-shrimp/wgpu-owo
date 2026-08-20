@@ -1,7 +1,10 @@
 // ------------------------------------------------------------------- imports
 
 use anyhow::Context;
-use image::GenericImageView;
+
+use std::sync::Arc;
+use winit::event_loop::ActiveEventLoop;
+use winit::window::Window;
 
 use std::borrow::Cow;
 use std::mem;
@@ -10,14 +13,11 @@ use wgpu::{
     BackendOptions, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions,
     util::DeviceExt,
 };
-use winit::event_loop::ActiveEventLoop;
 
 use glam::{Mat4, Vec3, camera};
+use image::GenericImageView;
 
-use crate::{
-    Arc, Window,
-    world::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH},
-};
+use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH};
 
 // ------------------------------------------------------------------- texture size for create_texture()
 
