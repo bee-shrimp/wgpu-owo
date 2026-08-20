@@ -12,6 +12,7 @@ use app::App;
 mod config;
 mod ecs;
 mod renderer;
+mod sprite;
 mod world;
 
 // ------------------------------------------------------------------- main
