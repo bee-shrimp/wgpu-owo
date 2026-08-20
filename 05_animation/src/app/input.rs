@@ -31,6 +31,7 @@ pub struct InputHandler {
 // ------------------------------------------------------------------- take input from app
 
 impl InputHandler {
+    /// creates new InputHandler.
     pub fn new(window_size: Size) -> Self {
         Self {
             pressed_keys: HashSet::new(),
@@ -40,26 +41,32 @@ impl InputHandler {
         }
     }
 
+    /// updates window size.
     pub fn resize(&mut self, window_size: Size) {
         self.window_size = window_size;
     }
 
+    /// adds keycode to InputHandler.pressed_keys.
     pub fn insert_key(&mut self, code: KeyCode) {
         self.pressed_keys.insert(code);
     }
 
+    /// removes keycode from InputHandler.pressed_keys.
     pub fn remove_key(&mut self, code: KeyCode) {
         self.pressed_keys.remove(&code);
     }
 
+    /// returns if the keycode is in InputHandler.pressed_keys.
     pub fn has_key(&self, code: KeyCode) -> bool {
         self.pressed_keys.contains(&code)
     }
 
+    /// updates InputHandler.cursor_pos.
     pub fn update_cursor_pos(&mut self, pos: Pos) {
         self.cursor_pos = pos;
     }
 
+    /// detects if mouse has been clicked.
     pub fn update_mouse_state(&mut self) {
         self.mouse_left.has_triggered = !self.mouse_left.was_pressed && self.mouse_left.is_pressed;
         if self.mouse_left.has_triggered {
@@ -69,6 +76,7 @@ impl InputHandler {
         self.mouse_left.was_pressed = self.mouse_left.is_pressed;
     }
 
+    /// updates MouseState.
     pub fn button_pressed(&mut self, button: MouseButton) {
         match button {
             MouseButton::Left => {
@@ -78,6 +86,7 @@ impl InputHandler {
         }
     }
 
+    /// updates MouseState.
     pub fn button_released(&mut self, button: MouseButton) {
         match button {
             MouseButton::Left => {
@@ -87,6 +96,7 @@ impl InputHandler {
         }
     }
 
+    /// returns if mouse was clicked.
     pub fn has_triggered(&mut self, button: MouseButton) -> bool {
         match button {
             MouseButton::Left => self.mouse_left.has_triggered,
@@ -94,6 +104,7 @@ impl InputHandler {
         }
     }
 
+    /// returns click position.
     pub fn get_click_pos(&self, button: MouseButton) -> Option<Pos> {
         match button {
             MouseButton::Left => self.mouse_left.pos,
@@ -102,6 +113,7 @@ impl InputHandler {
     }
 }
 
+/// converts window coord to world coord.
 fn cursor_pos_to_world_pos(window_size: Size, cursor_pos: Pos) -> Option<Pos> {
     let w_ratio = window_size.w / f32::from(LOGIC_WIDTH);
     let h_ratio = window_size.h / f32::from(LOGIC_HEIGHT);

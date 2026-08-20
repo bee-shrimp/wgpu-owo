@@ -23,8 +23,7 @@ pub struct EntityManager {
 }
 
 impl EntityManager {
-    // --------------------------------------------------------------- create new entity manager struct
-
+    /// creates new entity manager struct
     pub const fn new() -> Self {
         Self {
             next_id: 0,
@@ -32,8 +31,10 @@ impl EntityManager {
         }
     }
 
-    // --------------------------------------------------------------- return id
-
+    /// returns an Entity with an id.
+    /// reuses id of despawned entities if there are any.
+    /// creates new id if free list is empty.
+    /// returns None if entity slot is full.
     pub fn spawn(&mut self) -> Option<Entity> {
         if let Some(id) = self.free_list.pop() {
             //
@@ -51,8 +52,7 @@ impl EntityManager {
         }
     }
 
-    // --------------------------------------------------------------- store id for reuse
-
+    // /// stores id for reuse
     // pub fn despawn(&mut self, id: usize) -> anyhow::Result<()> {
     //     if id >= MAX_ENTITIES {
     //         anyhow::bail!("invalid entity id");

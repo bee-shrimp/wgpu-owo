@@ -11,6 +11,8 @@ use crate::sprite::Sprite;
 pub struct CreateEntitySystem;
 
 impl CreateEntitySystem {
+    /// adds data to ComponentStorage[[entity.index]].
+    /// uses MAX_ENTITIES to determine the number of entities.
     pub fn create_entities(
         entity_manager: &mut EntityManager,
         components: &mut Components,
@@ -20,7 +22,7 @@ impl CreateEntitySystem {
 
             let entity = entity_manager.spawn().context("no free slot")?;
 
-            // ----------------------------------------------------------- add data to vec[id]
+            // ----------------------------------------------------------- add data to ComponentStorage[entity.index]
             components
                 .positions
                 .insert(
@@ -64,6 +66,7 @@ impl CreateEntitySystem {
 pub struct ToggleSpriteSystem;
 
 impl ToggleSpriteSystem {
+    /// toggle sprite of clicked position.
     pub fn update(components: &mut Components, click_pos: Pos) -> anyhow::Result<()> {
         let gx = (click_pos.x / f32::from(RECT_WIDTH)).floor() as u8;
         let gy = (click_pos.y / f32::from(RECT_HEIGHT)).floor() as u8;
@@ -94,12 +97,14 @@ impl ToggleSpriteSystem {
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
+    /// creates Vec of InstanceData from components data.
     pub fn update(&self, components: &Components) -> anyhow::Result<Vec<InstanceData>> {
         Ok((0..MAX_ENTITIES)
             .filter_map(|id| self.build_instance_data(Entity::new(id), components))
             .collect())
     }
 
+    /// creates InstanceData for each entity.
     pub fn build_instance_data(
         self,
         entity: Entity,

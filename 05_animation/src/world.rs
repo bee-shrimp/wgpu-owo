@@ -22,6 +22,7 @@ pub struct World {
 // ------------------------------------------------------------------- default empty world
 
 impl Default for World {
+    /// create empty world.
     fn default() -> Self {
         Self {
             entity_manager: EntityManager::new(),
@@ -37,8 +38,7 @@ impl Default for World {
 }
 
 impl World {
-    // --------------------------------------------------------------- init world with entities
-
+    /// initialise world with entities.
     pub fn init(&mut self) -> anyhow::Result<()> {
         CreateEntitySystem::create_entities(&mut self.entity_manager, &mut self.components)
             .context("failed to create entities")?;
@@ -49,8 +49,7 @@ impl World {
         Ok(())
     }
 
-    // --------------------------------------------------------------- update
-
+    /// update components.
     pub fn update(&mut self, click_pos: Pos, _dt: f32) -> anyhow::Result<()> {
         ToggleSpriteSystem::update(&mut self.components, click_pos)?;
 
@@ -59,6 +58,7 @@ impl World {
         Ok(())
     }
 
+    /// update instance data.
     pub fn update_instances(&mut self) -> anyhow::Result<()> {
         self.instances.clear();
 
@@ -68,14 +68,17 @@ impl World {
         Ok(())
     }
 
+    /// pause/unpause.
     pub const fn toggle_running(&mut self) {
         self.is_running = !self.is_running;
     }
 
+    /// return list of InstanceData.
     pub fn get_instances(&self) -> &[InstanceData] {
         &self.instances
     }
 
+    /// return if paused.
     pub const fn is_running(&self) -> bool {
         self.is_running
     }
