@@ -14,33 +14,19 @@ struct ViewportData {
     h: f32,
 }
 
-pub fn execute_renderpasses(
-    device: &wgpu::Device,
-    queue: &wgpu::Queue,
-    surface_texture: wgpu::SurfaceTexture,
-
+pub fn draw_mid_renderpass(
+    encoder: &mut wgpu::CommandEncoder,
     mid_texture_view: &wgpu::TextureView,
     mid_render_pipeline: &wgpu::RenderPipeline,
     mid_bind_group: &wgpu::BindGroup,
 
-    surface_texture_view: &wgpu::TextureView,
-    scaler_render_pipeline: &wgpu::RenderPipeline,
-    scaler_bind_group: &wgpu::BindGroup,
-
-    fullscreen_vertex_buffer: &wgpu::Buffer,
     rect_vertex_buffer: &wgpu::Buffer,
     instance_buffer: &wgpu::Buffer,
     index_buffer: &wgpu::Buffer,
 
     num_instances: u32,
     num_indices: u32,
-
-    window_size: Size,
-) -> anyhow::Result<()> {
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("render encoder"),
-    });
-
+) {
     // ----------------------------------------------------------- mid renderpass
 
     let mut mid_renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -77,7 +63,19 @@ pub fn execute_renderpasses(
     // ----------------------------------------------------------- end the renderpass
 
     drop(mid_renderpass);
+}
 
+pub fn draw_scaler_renderpass(
+    encoder: &mut wgpu::CommandEncoder,
+
+    surface_texture_view: &wgpu::TextureView,
+    scaler_render_pipeline: &wgpu::RenderPipeline,
+    scaler_bind_group: &wgpu::BindGroup,
+
+    fullscreen_vertex_buffer: &wgpu::Buffer,
+
+    window_size: Size,
+) {
     // ----------------------------------------------------------- surface renderpass
 
     let mut scaler_renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -117,13 +115,6 @@ pub fn execute_renderpasses(
     // ----------------------------------------------------------- end the renderpass
 
     drop(scaler_renderpass);
-
-    // ----------------------------------------------------------- submit the command
-
-    queue.submit([encoder.finish()]);
-    queue.present(surface_texture);
-
-    Ok(())
 }
 
 // --------------------------------------------------------------- calculate viewport data for scaler

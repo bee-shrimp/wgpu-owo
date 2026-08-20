@@ -11,8 +11,8 @@ use crate::sprite::Sprite;
 pub struct CreateEntitySystem;
 
 impl CreateEntitySystem {
-    /// adds data to ComponentStorage[[entity.index]].
-    /// uses MAX_ENTITIES to determine the number of entities.
+    /// adds data to `ComponentStorage`[[entity.index]].
+    /// uses `MAX_ENTITIES` to determine the number of entities.
     pub fn create_entities(
         entity_manager: &mut EntityManager,
         components: &mut Components,
@@ -97,28 +97,24 @@ impl ToggleSpriteSystem {
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
-    /// creates Vec of InstanceData from components data.
-    pub fn update(&self, components: &Components) -> anyhow::Result<Vec<InstanceData>> {
-        Ok((0..MAX_ENTITIES)
-            .filter_map(|id| self.build_instance_data(Entity::new(id), components))
-            .collect())
+    /// creates Vec of `InstanceData` from components data.
+    pub fn update(self, components: &Components) -> Vec<InstanceData> {
+        (0..MAX_ENTITIES)
+            .filter_map(|id| build_instance_data(Entity::new(id), components))
+            .collect()
     }
+}
 
-    /// creates InstanceData for each entity.
-    pub fn build_instance_data(
-        self,
-        entity: Entity,
-        components: &Components,
-    ) -> Option<InstanceData> {
-        let position = components.positions.get(entity)?;
-        let size = components.sizes.get(entity)?;
-        let sprite_data = components.sprites.get(entity)?.uv_data();
+/// creates `InstanceData` for each entity.
+pub fn build_instance_data(entity: Entity, components: &Components) -> Option<InstanceData> {
+    let position = components.positions.get(entity)?;
+    let size = components.sizes.get(entity)?;
+    let sprite_data = components.sprites.get(entity)?.uv_data();
 
-        Some(InstanceData {
-            position: [position.x, position.y],
-            size: [size.w, size.h],
-            sprite_offset: [sprite_data.uv_offset.u, sprite_data.uv_offset.v],
-            sprite_size: [sprite_data.uv_size.w, sprite_data.uv_size.h],
-        })
-    }
+    Some(InstanceData {
+        position: [position.x, position.y],
+        size: [size.w, size.h],
+        sprite_offset: [sprite_data.uv_offset.u, sprite_data.uv_offset.v],
+        sprite_size: [sprite_data.uv_size.w, sprite_data.uv_size.h],
+    })
 }

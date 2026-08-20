@@ -31,7 +31,7 @@ pub struct InputHandler {
 // ------------------------------------------------------------------- take input from app
 
 impl InputHandler {
-    /// creates new InputHandler.
+    /// creates new `InputHandler`.
     pub fn new(window_size: Size) -> Self {
         Self {
             pressed_keys: HashSet::new(),
@@ -46,22 +46,22 @@ impl InputHandler {
         self.window_size = window_size;
     }
 
-    /// adds keycode to InputHandler.pressed_keys.
+    /// adds keycode to `InputHandler.pressed_keys`.
     pub fn insert_key(&mut self, code: KeyCode) {
         self.pressed_keys.insert(code);
     }
 
-    /// removes keycode from InputHandler.pressed_keys.
+    /// removes keycode from `InputHandler.pressed_keys`.
     pub fn remove_key(&mut self, code: KeyCode) {
         self.pressed_keys.remove(&code);
     }
 
-    /// returns if the keycode is in InputHandler.pressed_keys.
+    /// returns if the keycode is in `InputHandler.pressed_keys`.
     pub fn has_key(&self, code: KeyCode) -> bool {
         self.pressed_keys.contains(&code)
     }
 
-    /// updates InputHandler.cursor_pos.
+    /// updates `InputHandler.cursor_pos`.
     pub fn update_cursor_pos(&mut self, pos: Pos) {
         self.cursor_pos = pos;
     }
@@ -76,23 +76,17 @@ impl InputHandler {
         self.mouse_left.was_pressed = self.mouse_left.is_pressed;
     }
 
-    /// updates MouseState.
+    /// updates `MouseState`.
     pub fn button_pressed(&mut self, button: MouseButton) {
-        match button {
-            MouseButton::Left => {
-                self.mouse_left.is_pressed = true;
-            }
-            _ => {}
+        if button == MouseButton::Left {
+            self.mouse_left.is_pressed = true;
         }
     }
 
-    /// updates MouseState.
+    /// updates `MouseState`.
     pub fn button_released(&mut self, button: MouseButton) {
-        match button {
-            MouseButton::Left => {
-                self.mouse_left.is_pressed = false;
-            }
-            _ => {}
+        if button == MouseButton::Left {
+            self.mouse_left.is_pressed = false;
         }
     }
 

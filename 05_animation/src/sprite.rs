@@ -11,12 +11,12 @@ pub enum Sprite {
 
 // ------------------------------------------------------------------- return SpriteData of sprite
 
-/// returns SpriteData of self
+/// returns `SpriteData` of self
 impl Sprite {
     pub fn uv_data(self) -> SpriteData {
         match self {
-            Sprite::RedFlower => SpriteData::new(GridPos { gx: 0, gy: 0 }),
-            Sprite::YellowFlower => SpriteData::new(GridPos { gx: 1, gy: 0 }),
+            Self::RedFlower => SpriteData::new(GridPos { gx: 0, gy: 0 }),
+            Self::YellowFlower => SpriteData::new(GridPos { gx: 1, gy: 0 }),
         }
     }
 }

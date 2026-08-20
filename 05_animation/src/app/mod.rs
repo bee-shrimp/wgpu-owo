@@ -150,11 +150,11 @@ impl ApplicationHandler for App {
         // ----------------------------------------------------------- calculate dt
 
         let now = Instant::now();
-        let dt = if let Some(last) = self.last_frame_time {
+
+        // 0.016 = 60fps
+        let dt = self.last_frame_time.map_or(0.016, |last| {
             now.duration_since(last).as_secs_f32().min(0.1)
-        } else {
-            0.016 // fps60
-        };
+        });
 
         self.last_frame_time = Some(now);
 
@@ -182,7 +182,7 @@ impl ApplicationHandler for App {
         self.input.update_mouse_state();
         if !self.input.has_triggered(MouseButton::Left) {
             return;
-        };
+        }
 
         // ----------------------------------------------------------- update world if clicked
 

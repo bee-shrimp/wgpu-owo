@@ -62,7 +62,7 @@ impl World {
     pub fn update_instances(&mut self) -> anyhow::Result<()> {
         self.instances.clear();
 
-        let new_instances = InstanceDataBuildSystem.update(&self.components)?;
+        let new_instances = InstanceDataBuildSystem.update(&self.components);
         self.instances.extend(new_instances);
 
         Ok(())
@@ -73,7 +73,7 @@ impl World {
         self.is_running = !self.is_running;
     }
 
-    /// return list of InstanceData.
+    /// return list of `InstanceData`.
     pub fn get_instances(&self) -> &[InstanceData] {
         &self.instances
     }

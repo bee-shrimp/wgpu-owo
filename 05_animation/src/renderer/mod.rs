@@ -238,33 +238,40 @@ impl Renderer {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        renderpass::execute_renderpasses(
-            // needed for execution
-            &self.device,
-            &self.queue,
-            surface_texture,
-            // mid renderpass
+        // ----------------------------------------------------------- execute renderpasses
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("render encoder"),
+            });
+
+        renderpass::draw_mid_renderpass(
+            &mut encoder,
             &self.mid_texture_view,
             &self.mid_render_pipeline,
             &self.mid_bind_group,
-            // scaler renderpass
-            &surface_texture_view,
-            &self.scaler_render_pipeline,
-            &self.scaler_bind_group,
-            // buffers
-            &self.fullscreen_vertex_buffer,
             &self.rect_vertex_buffer,
             &self.instance_buffer,
             &self.index_buffer,
             self.instances.len() as u32,
             self.num_indices,
-            // window size
+        );
+
+        renderpass::draw_scaler_renderpass(
+            &mut encoder,
+            &surface_texture_view,
+            &self.scaler_render_pipeline,
+            &self.scaler_bind_group,
+            &self.fullscreen_vertex_buffer,
             Size {
                 w: self.window.inner_size().width as f32,
                 h: self.window.inner_size().height as f32,
             },
-        )
-        .context("failed to execute renderpasses")?;
+        );
+
+        self.queue.submit([encoder.finish()]);
+        self.queue.present(surface_texture);
 
         Ok(())
     }

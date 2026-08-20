@@ -147,7 +147,7 @@ pub fn create_vertex_buffer(
 pub fn create_instance_buffer(device: &wgpu::Device, instances: &[InstanceData]) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("instance buffer"),
-        contents: bytemuck::cast_slice(&instances),
+        contents: bytemuck::cast_slice(instances),
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     })
 }
