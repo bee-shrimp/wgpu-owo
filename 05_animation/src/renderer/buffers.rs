@@ -162,7 +162,7 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
     })
 }
 
-pub fn update_uniform_buffer(queue: &wgpu::Queue, uniform_buffer: &mut wgpu::Buffer) {
+pub fn update_uniform_buffer(queue: &wgpu::Queue, uniform_buffer: &wgpu::Buffer) {
     let mut view = Mat4::IDENTITY;
     view *= Mat4::from_scale(Vec3::splat(1.0));
 
@@ -187,7 +187,7 @@ pub fn update_uniform_buffer(queue: &wgpu::Queue, uniform_buffer: &mut wgpu::Buf
 
 pub fn update_instance_buffer(
     queue: &wgpu::Queue,
-    instance_buffer: &mut wgpu::Buffer,
+    instance_buffer: &wgpu::Buffer,
     instances: &[InstanceData],
 ) {
     queue.write_buffer(instance_buffer, 0, bytemuck::cast_slice(instances));

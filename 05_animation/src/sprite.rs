@@ -8,17 +8,39 @@ pub enum Sprite {
     Walk,
 }
 
+pub struct Animation {
+    pub flames: Vec<GridPos>,
+    pub flame_duration: f32,
+    pub max_flame_idx: u8,
+}
+
 // ------------------------------------------------------------------- return SpriteData of sprite
 
-/// returns `SpriteData` of self
 impl Sprite {
-    pub fn uv_data(self, flame: u8) -> SpriteData {
-        let gx = flame;
-        let gy = match self {
-            Self::Walk => 0,
-        };
+    /// returns `Animation` of self
+    pub fn animation(self) -> Animation {
+        match self {
+            Self::Walk => Animation {
+                flames: vec![
+                    GridPos { gx: 0, gy: 0 },
+                    GridPos { gx: 1, gy: 0 },
+                    GridPos { gx: 2, gy: 0 },
+                    GridPos { gx: 3, gy: 0 },
+                    GridPos { gx: 4, gy: 0 },
+                    GridPos { gx: 5, gy: 0 },
+                    GridPos { gx: 6, gy: 0 },
+                    GridPos { gx: 7, gy: 0 },
+                ],
+                flame_duration: 0.16,
+                max_flame_idx: 7,
+            },
+        }
+    }
 
-        SpriteData::new(GridPos { gx, gy })
+    /// returns `SpriteData` of self
+    pub fn uv_data(self, flame_idx: u8) -> SpriteData {
+        let g_pos = self.animation().flames[flame_idx as usize];
+        SpriteData::new(g_pos)
     }
 }
 

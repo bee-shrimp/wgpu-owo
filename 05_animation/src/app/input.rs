@@ -90,13 +90,13 @@ impl InputHandler {
         }
     }
 
-    /// returns if mouse was clicked.
-    pub fn has_triggered(&self, button: MouseButton) -> bool {
-        match button {
-            MouseButton::Left => self.mouse_left.has_triggered,
-            _ => false,
-        }
-    }
+    // /// returns if mouse was clicked.
+    // pub fn has_triggered(&self, button: MouseButton) -> bool {
+    //     match button {
+    //         MouseButton::Left => self.mouse_left.has_triggered,
+    //         _ => false,
+    //     }
+    // }
 
     /// returns click position.
     pub fn get_click_pos(&self, button: MouseButton) -> Option<Pos> {

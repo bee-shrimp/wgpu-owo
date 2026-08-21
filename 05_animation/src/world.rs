@@ -57,7 +57,6 @@ impl World {
 
     /// updates components.
     pub fn update(&mut self, _click_pos: Option<Pos>, dt: f32) -> anyhow::Result<()> {
-        println!("update called");
         AnimationSystem::update(&mut self.components, dt)?;
         self.update_instances();
 

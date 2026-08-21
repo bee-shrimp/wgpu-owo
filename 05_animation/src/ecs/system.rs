@@ -4,7 +4,7 @@ use anyhow::Context;
 
 use crate::config::{MAX_COL, MAX_ENTITIES, RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
-use crate::sprite::Sprite;
+use crate::sprite::{Animation, Sprite};
 
 // ------------------------------------------------------------------- create entity struct
 
@@ -97,45 +97,36 @@ pub struct AnimationSystem;
 impl AnimationSystem {
     pub fn update(components: &mut Components, dt: f32) -> anyhow::Result<()> {
         for id in 0..MAX_ENTITIES {
-            println!("animation system called");
-            // ----------------------------------------------------------- get usable id
-
             let entity = Entity::new(id);
+            let sprite = components
+                .sprites
+                .get(entity)
+                .context("failed to get sprite")?;
+
+            let animation = sprite.animation();
+
+            // -----------------------------------------------------------
+
+            let next_flame = calc_next_flame(entity, components, &animation)?;
 
             let elapsed = components
                 .elapsed
-                .get_mut(entity)
-                .context("failed to get elapsed")?;
+                .get(entity)
+                .context("failed to get mut elapsed")?;
 
-            println!("{:?}", elapsed);
-
-            let new_elapsed = *elapsed + dt;
+            let elapsed_plus_dt = *elapsed + dt;
 
             let next_elapsed: f32;
 
-            let flame = components
-                .flames
-                .get_mut(entity)
-                .context("failed to get mut elapsed")?;
-
-            let new_flame = *flame + 1;
-
-            let next_flame: u8;
-            if new_flame >= 7 {
-                next_flame = 0
-            } else {
-                next_flame = new_flame
-            };
-
-            if new_elapsed >= 0.16 {
+            if elapsed_plus_dt >= animation.flame_duration {
                 *components
                     .flames
                     .get_mut(entity)
                     .context("failed to get mut flame")? = next_flame;
                 next_elapsed = 0.0;
             } else {
-                next_elapsed = new_elapsed
-            };
+                next_elapsed = elapsed_plus_dt;
+            }
 
             *components
                 .elapsed
@@ -145,6 +136,28 @@ impl AnimationSystem {
         Ok(())
     }
 }
+
+fn calc_next_flame(
+    entity: Entity,
+    components: &Components,
+    animation: &Animation,
+) -> anyhow::Result<u8> {
+    let flame = components
+        .flames
+        .get(entity)
+        .context("failed to get mut flame")?;
+
+    let flame_plus_one = *flame + 1;
+
+    let next_flame: u8 = if flame_plus_one > animation.max_flame_idx {
+        0
+    } else {
+        flame_plus_one
+    };
+
+    Ok(next_flame)
+}
+
 // ------------------------------------------------------------------- toggle sprite system
 
 // pub struct ToggleSpriteSystem;
