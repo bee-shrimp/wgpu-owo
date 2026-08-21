@@ -2,14 +2,11 @@
 
 use anyhow::Context;
 
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use winit::event_loop::ActiveEventLoop;
 use winit::window::Window;
-
-use std::borrow::Cow;
-
-use glam::{Mat4, Vec3, camera};
 
 use crate::{
     config::{LOGIC_HEIGHT, LOGIC_WIDTH},
@@ -23,7 +20,8 @@ mod pipelines;
 mod renderpass;
 mod textures;
 
-pub use buffers::{InstanceData, Uniforms, Vertex};
+// accessible from other modules.
+pub use buffers::InstanceData;
 
 // ------------------------------------------------------------------- renderer
 
@@ -42,10 +40,8 @@ pub struct Renderer {
     rect_vertex_buffer: wgpu::Buffer,
 
     instance_buffer: wgpu::Buffer,
-    instances: Vec<InstanceData>,
 
     index_buffer: wgpu::Buffer,
-    num_indices: u32,
 
     // --------------------------------------------------------------- textures
     mid_texture_view: wgpu::TextureView,
@@ -96,10 +92,8 @@ impl Renderer {
         );
 
         let instance_buffer = buffers::create_instance_buffer(&device, instances);
-        let instances = instances.to_vec();
 
         let index_buffer = buffers::create_index_buffer(&device, buffers::RECT_INDICES);
-        let num_indices = u32::try_from(buffers::RECT_INDICES.len()).context("conversion error")?;
 
         // ----------------------------------------------------------- bind group layouts
 
@@ -123,9 +117,9 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/scaler.wgsl"))),
         });
 
-        // --------------------------------------------------------------------------- load image
+        // ----------------------------------------------------------- load image
 
-        let diffuse_bytes = include_bytes!("../../img/flowers.png");
+        let diffuse_bytes = include_bytes!("../../img/robot-256.png");
 
         let diffuse_texture_view =
             textures::create_diffuse_texture(&device, &queue, "diffuse texture", diffuse_bytes)?;
@@ -190,12 +184,8 @@ impl Renderer {
             rect_vertex_buffer,
 
             uniform_buffer,
-
             instance_buffer,
-            instances,
-
             index_buffer,
-            num_indices,
 
             mid_texture_view,
 
@@ -254,8 +244,6 @@ impl Renderer {
             &self.rect_vertex_buffer,
             &self.instance_buffer,
             &self.index_buffer,
-            self.instances.len() as u32,
-            self.num_indices,
         );
 
         renderpass::draw_scaler_renderpass(
@@ -295,29 +283,8 @@ impl Renderer {
 
     // --------------------------------------------------------------- update uniform buffer
 
-    pub fn update(&self, instances: &[InstanceData]) {
-        let mut view = Mat4::IDENTITY;
-        view *= Mat4::from_scale(Vec3::splat(1.0));
-
-        let projection = camera::lh::proj::directx::orthographic(
-            0.0,
-            f32::from(LOGIC_WIDTH),
-            f32::from(LOGIC_HEIGHT),
-            0.0,
-            -1.0,
-            1.0,
-        );
-
-        self.queue.write_buffer(
-            &self.uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[Uniforms {
-                view_matrix: view.to_cols_array_2d(),
-                projection_matrix: projection.to_cols_array_2d(),
-            }]),
-        );
-
-        self.queue
-            .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(instances));
+    pub fn update(&mut self, instances: &[InstanceData]) {
+        buffers::update_uniform_buffer(&self.queue, &mut self.uniform_buffer);
+        buffers::update_instance_buffer(&self.queue, &mut self.instance_buffer, instances);
     }
 }

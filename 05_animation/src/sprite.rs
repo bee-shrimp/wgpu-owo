@@ -5,19 +5,20 @@ use crate::ecs::Size;
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Sprite {
     #[default]
-    RedFlower, // 0
-    YellowFlower, // 1
+    Walk,
 }
 
 // ------------------------------------------------------------------- return SpriteData of sprite
 
 /// returns `SpriteData` of self
 impl Sprite {
-    pub fn uv_data(self) -> SpriteData {
-        match self {
-            Self::RedFlower => SpriteData::new(GridPos { gx: 0, gy: 0 }),
-            Self::YellowFlower => SpriteData::new(GridPos { gx: 1, gy: 0 }),
-        }
+    pub fn uv_data(self, flame: u8) -> SpriteData {
+        let gx = flame;
+        let gy = match self {
+            Self::Walk => 0,
+        };
+
+        SpriteData::new(GridPos { gx, gy })
     }
 }
 

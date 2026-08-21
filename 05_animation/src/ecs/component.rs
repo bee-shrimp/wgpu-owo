@@ -24,6 +24,8 @@ pub struct Components {
     pub positions: ComponentStorage<Pos>,
     pub sizes: ComponentStorage<Size>,
     pub sprites: ComponentStorage<Sprite>,
+    pub flames: ComponentStorage<u8>,
+    pub elapsed: ComponentStorage<f32>,
 }
 
 // ------------------------------------------------------------------- component srorage

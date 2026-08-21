@@ -1,4 +1,8 @@
+// ------------------------------------------------------------------- imports
+
 use crate::renderer::buffers::Uniforms;
+
+// ------------------------------------------------------------------- functions to create bind group layout
 
 // pub fn create_u_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
 //     // ----------------------------------------------------------- bind group w/ uniform
@@ -115,6 +119,8 @@ pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupL
 //         ],
 //     })
 // }
+
+// ------------------------------------------------------------------- functions to create bind groups
 
 // ------------------------------------------------------------------- create bind group w/ uniform
 

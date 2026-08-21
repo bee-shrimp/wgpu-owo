@@ -1,8 +1,9 @@
 // ------------------------------------------------------------------- imports
 
 use crate::{
-    config::{LOGIC_HEIGHT, LOGIC_WIDTH},
+    config::{self, LOGIC_HEIGHT, LOGIC_WIDTH},
     ecs::Size,
+    renderer::buffers,
 };
 
 // ------------------------------------------------------------------- viewport for scaler renderpass
@@ -14,6 +15,7 @@ struct ViewportData {
     h: f32,
 }
 
+/// draw instances onto a small texture
 pub fn draw_mid_renderpass(
     encoder: &mut wgpu::CommandEncoder,
     mid_texture_view: &wgpu::TextureView,
@@ -23,9 +25,6 @@ pub fn draw_mid_renderpass(
     rect_vertex_buffer: &wgpu::Buffer,
     instance_buffer: &wgpu::Buffer,
     index_buffer: &wgpu::Buffer,
-
-    num_instances: u32,
-    num_indices: u32,
 ) {
     // ----------------------------------------------------------- mid renderpass
 
@@ -51,6 +50,9 @@ pub fn draw_mid_renderpass(
         multiview_mask: None,
     });
 
+    let num_instances = config::MAX_ENTITIES as u32;
+    let num_indices = buffers::RECT_INDICES.len() as u32;
+
     // ----------------------------------------------------------- use the renderpass
 
     mid_renderpass.set_pipeline(mid_render_pipeline);
@@ -65,6 +67,7 @@ pub fn draw_mid_renderpass(
     drop(mid_renderpass);
 }
 
+/// samples a texture and draw bigger onto the surface.
 pub fn draw_scaler_renderpass(
     encoder: &mut wgpu::CommandEncoder,
 

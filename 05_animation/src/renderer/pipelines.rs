@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------- imports
 
-use crate::renderer::{InstanceData, Vertex};
+use crate::renderer::buffers::{InstanceData, Vertex};
 use wgpu::PipelineCompilationOptions;
 
 // ------------------------------------------------------------------- create render pipeline

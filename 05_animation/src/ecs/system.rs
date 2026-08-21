@@ -13,9 +13,10 @@ pub struct CreateEntitySystem;
 impl CreateEntitySystem {
     /// adds data to `ComponentStorage`[[entity.index]].
     /// uses `MAX_ENTITIES` to determine the number of entities.
-    pub fn create_entities(
+    pub fn create_grid_entities(
         entity_manager: &mut EntityManager,
         components: &mut Components,
+        sprite: Sprite,
     ) -> anyhow::Result<()> {
         for _ in 0..MAX_ENTITIES {
             // ----------------------------------------------------------- get usable id
@@ -45,49 +46,21 @@ impl CreateEntitySystem {
                 )
                 .context("failed to add size")?;
 
-            if entity.index.is_multiple_of(2) {
-                components
-                    .sprites
-                    .insert(entity, Sprite::RedFlower)
-                    .context("failed to add sprite data from hashmap")?;
-            } else {
-                components
-                    .sprites
-                    .insert(entity, Sprite::YellowFlower)
-                    .context("failed to add sprite data from hashmap")?;
-            }
+            components
+                .sprites
+                .insert(entity, sprite)
+                .context("failed to add sprite data")?;
+
+            components
+                .flames
+                .insert(entity, 0)
+                .context("failed to add flame")?;
+
+            components
+                .elapsed
+                .insert(entity, 0.0)
+                .context("failed to add elapsed")?;
         }
-        Ok(())
-    }
-}
-
-// ------------------------------------------------------------------- react system struct
-
-pub struct ToggleSpriteSystem;
-
-impl ToggleSpriteSystem {
-    /// toggle sprite of clicked position.
-    pub fn update(components: &mut Components, click_pos: Pos) -> anyhow::Result<()> {
-        let gx = (click_pos.x / f32::from(RECT_WIDTH)).floor() as u8;
-        let gy = (click_pos.y / f32::from(RECT_HEIGHT)).floor() as u8;
-
-        let idx = usize::from(gy * MAX_COL + gx);
-
-        let sprite = components
-            .sprites
-            .get(Entity::new(idx))
-            .context("failed to get sprite")?;
-
-        let new_sprite = match sprite {
-            Sprite::RedFlower => Sprite::YellowFlower,
-            Sprite::YellowFlower => Sprite::RedFlower,
-        };
-
-        *components
-            .sprites
-            .get_mut(Entity::new(idx))
-            .context("failed to get sprite mut")? = new_sprite;
-
         Ok(())
     }
 }
@@ -98,7 +71,7 @@ impl ToggleSpriteSystem {
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
     /// creates Vec of `InstanceData` from components data.
-    pub fn update(self, components: &Components) -> Vec<InstanceData> {
+    pub fn update(components: &Components) -> Vec<InstanceData> {
         (0..MAX_ENTITIES)
             .filter_map(|id| build_instance_data(Entity::new(id), components))
             .collect()
@@ -109,7 +82,8 @@ impl InstanceDataBuildSystem {
 pub fn build_instance_data(entity: Entity, components: &Components) -> Option<InstanceData> {
     let position = components.positions.get(entity)?;
     let size = components.sizes.get(entity)?;
-    let sprite_data = components.sprites.get(entity)?.uv_data();
+    let flame = components.flames.get(entity)?;
+    let sprite_data = components.sprites.get(entity)?.uv_data(*flame);
 
     Some(InstanceData {
         position: [position.x, position.y],
@@ -118,3 +92,86 @@ pub fn build_instance_data(entity: Entity, components: &Components) -> Option<In
         sprite_size: [sprite_data.uv_size.w, sprite_data.uv_size.h],
     })
 }
+
+pub struct AnimationSystem;
+impl AnimationSystem {
+    pub fn update(components: &mut Components, dt: f32) -> anyhow::Result<()> {
+        for id in 0..MAX_ENTITIES {
+            println!("animation system called");
+            // ----------------------------------------------------------- get usable id
+
+            let entity = Entity::new(id);
+
+            let elapsed = components
+                .elapsed
+                .get_mut(entity)
+                .context("failed to get elapsed")?;
+
+            println!("{:?}", elapsed);
+
+            let new_elapsed = *elapsed + dt;
+
+            let next_elapsed: f32;
+
+            let flame = components
+                .flames
+                .get_mut(entity)
+                .context("failed to get mut elapsed")?;
+
+            let new_flame = *flame + 1;
+
+            let next_flame: u8;
+            if new_flame >= 7 {
+                next_flame = 0
+            } else {
+                next_flame = new_flame
+            };
+
+            if new_elapsed >= 0.16 {
+                *components
+                    .flames
+                    .get_mut(entity)
+                    .context("failed to get mut flame")? = next_flame;
+                next_elapsed = 0.0;
+            } else {
+                next_elapsed = new_elapsed
+            };
+
+            *components
+                .elapsed
+                .get_mut(entity)
+                .context("failed to get mut elapsed")? = next_elapsed;
+        }
+        Ok(())
+    }
+}
+// ------------------------------------------------------------------- toggle sprite system
+
+// pub struct ToggleSpriteSystem;
+//
+// impl ToggleSpriteSystem {
+//     /// toggle sprite of clicked position.
+//     pub fn update(components: &mut Components, click_pos: Pos) -> anyhow::Result<()> {
+//         let gx = (click_pos.x / f32::from(RECT_WIDTH)).floor() as u8;
+//         let gy = (click_pos.y / f32::from(RECT_HEIGHT)).floor() as u8;
+//
+//         let idx = usize::from(gy * MAX_COL + gx);
+//
+//         let sprite = components
+//             .sprites
+//             .get(Entity::new(idx))
+//             .context("failed to get sprite")?;
+//
+//         let new_sprite = match sprite {
+//             Sprite::RedFlower => Sprite::YellowFlower,
+//             Sprite::YellowFlower => Sprite::RedFlower,
+//         };
+//
+//         *components
+//             .sprites
+//             .get_mut(Entity::new(idx))
+//             .context("failed to get sprite mut")? = new_sprite;
+//
+//         Ok(())
+//     }
+// }

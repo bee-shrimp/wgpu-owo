@@ -5,8 +5,8 @@ use anyhow::Context;
 use crate::config::MAX_ENTITIES;
 
 use crate::ecs::{
-    ComponentStorage, Components, CreateEntitySystem, EntityManager, InstanceDataBuildSystem, Pos,
-    ToggleSpriteSystem,
+    AnimationSystem, ComponentStorage, Components, CreateEntitySystem, EntityManager,
+    InstanceDataBuildSystem, Pos,
 };
 use crate::renderer::InstanceData;
 
@@ -22,7 +22,7 @@ pub struct World {
 // ------------------------------------------------------------------- default empty world
 
 impl Default for World {
-    /// create empty world.
+    /// creates empty world.
     fn default() -> Self {
         Self {
             entity_manager: EntityManager::new(),
@@ -30,6 +30,8 @@ impl Default for World {
                 positions: ComponentStorage::new(),
                 sizes: ComponentStorage::new(),
                 sprites: ComponentStorage::new(),
+                flames: ComponentStorage::new(),
+                elapsed: ComponentStorage::new(),
             },
             instances: Vec::new(),
             is_running: true,
@@ -38,34 +40,36 @@ impl Default for World {
 }
 
 impl World {
-    /// initialise world with entities.
+    /// initialises world with entities.
     pub fn init(&mut self) -> anyhow::Result<()> {
-        CreateEntitySystem::create_entities(&mut self.entity_manager, &mut self.components)
-            .context("failed to create entities")?;
+        CreateEntitySystem::create_grid_entities(
+            &mut self.entity_manager,
+            &mut self.components,
+            crate::sprite::Sprite::Walk,
+        )
+        .context("failed to create entities")?;
 
         self.instances.reserve(MAX_ENTITIES);
 
-        self.update_instances()?;
+        self.update_instances();
         Ok(())
     }
 
-    /// update components.
-    pub fn update(&mut self, click_pos: Pos, _dt: f32) -> anyhow::Result<()> {
-        ToggleSpriteSystem::update(&mut self.components, click_pos)?;
-
-        self.update_instances()?;
+    /// updates components.
+    pub fn update(&mut self, _click_pos: Option<Pos>, dt: f32) -> anyhow::Result<()> {
+        println!("update called");
+        AnimationSystem::update(&mut self.components, dt)?;
+        self.update_instances();
 
         Ok(())
     }
 
-    /// update instance data.
-    pub fn update_instances(&mut self) -> anyhow::Result<()> {
+    /// updates instance data.
+    pub fn update_instances(&mut self) {
         self.instances.clear();
 
-        let new_instances = InstanceDataBuildSystem.update(&self.components);
+        let new_instances = InstanceDataBuildSystem::update(&self.components);
         self.instances.extend(new_instances);
-
-        Ok(())
     }
 
     /// pause/unpause.

@@ -2,7 +2,7 @@ use std::mem;
 use wgpu::util::DeviceExt;
 
 use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH};
-use glam::{Mat4, camera};
+use glam::{Mat4, Vec3, camera};
 
 // ------------------------------------------------------------------- struct for uniform buffer
 
@@ -160,4 +160,35 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
         contents: bytemuck::cast_slice(indices),
         usage: wgpu::BufferUsages::INDEX,
     })
+}
+
+pub fn update_uniform_buffer(queue: &wgpu::Queue, uniform_buffer: &mut wgpu::Buffer) {
+    let mut view = Mat4::IDENTITY;
+    view *= Mat4::from_scale(Vec3::splat(1.0));
+
+    let projection = camera::lh::proj::directx::orthographic(
+        0.0,
+        f32::from(LOGIC_WIDTH),
+        f32::from(LOGIC_HEIGHT),
+        0.0,
+        -1.0,
+        1.0,
+    );
+
+    queue.write_buffer(
+        uniform_buffer,
+        0,
+        bytemuck::cast_slice(&[Uniforms {
+            view_matrix: view.to_cols_array_2d(),
+            projection_matrix: projection.to_cols_array_2d(),
+        }]),
+    );
+}
+
+pub fn update_instance_buffer(
+    queue: &wgpu::Queue,
+    instance_buffer: &mut wgpu::Buffer,
+    instances: &[InstanceData],
+) {
+    queue.write_buffer(instance_buffer, 0, bytemuck::cast_slice(instances));
 }
