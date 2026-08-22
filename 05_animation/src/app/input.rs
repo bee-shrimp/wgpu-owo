@@ -28,7 +28,7 @@ pub struct InputHandler {
     window_size: Size,
 }
 
-// ------------------------------------------------------------------- take input from app
+// ---------------------------------------------------------------- take input from app
 
 impl InputHandler {
     /// creates new `InputHandler`.
@@ -107,7 +107,7 @@ impl InputHandler {
     }
 }
 
-/// converts window coord to world coord.
+/// maps window coord to world coord.
 fn cursor_pos_to_world_pos(window_size: Size, cursor_pos: Pos) -> Option<Pos> {
     let w_ratio = window_size.w / f32::from(LOGIC_WIDTH);
     let h_ratio = window_size.h / f32::from(LOGIC_HEIGHT);

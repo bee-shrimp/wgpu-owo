@@ -1,7 +1,7 @@
 #![deny(clippy::all)]
 #![forbid(unsafe_code)]
 
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use anyhow::Context;
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -15,7 +15,7 @@ mod renderer;
 mod sprite;
 mod world;
 
-// ------------------------------------------------------------------- main
+// ---------------------------------------------------------------- main
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();

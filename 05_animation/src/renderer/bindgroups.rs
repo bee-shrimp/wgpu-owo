@@ -1,8 +1,8 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use crate::renderer::buffers::Uniforms;
 
-// ------------------------------------------------------------------- functions to create bind group layout
+// ---------------------------------------------------------------- functions to create bind group layout
 
 // pub fn create_u_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
 //     // ----------------------------------------------------------- bind group w/ uniform
@@ -120,9 +120,9 @@ pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupL
 //     })
 // }
 
-// ------------------------------------------------------------------- functions to create bind groups
+// ---------------------------------------------------------------- functions to create bind groups
 
-// ------------------------------------------------------------------- create bind group w/ uniform
+// ---------------------------------------------------------------- create bind group w/ uniform
 
 // pub fn create_u_bind_group(
 //     device: &wgpu::Device,
@@ -144,7 +144,7 @@ pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupL
 //     })
 // }
 
-// ------------------------------------------------------------------- create bind group w/ texture and sampler
+// ---------------------------------------------------------------- create bind group w/ texture and sampler
 
 pub fn create_t_s_bind_group(
     device: &wgpu::Device,
@@ -169,7 +169,7 @@ pub fn create_t_s_bind_group(
     })
 }
 
-// ------------------------------------------------------------------- create bind group w/ uniform, texture, sampler
+// ---------------------------------------------------------------- create bind group w/ uniform, texture, sampler
 
 pub fn create_u_t_s_bind_group(
     device: &wgpu::Device,

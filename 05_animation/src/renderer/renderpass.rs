@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use crate::{
     config::{self, LOGIC_HEIGHT, LOGIC_WIDTH},
@@ -6,7 +6,7 @@ use crate::{
     renderer::buffers,
 };
 
-// ------------------------------------------------------------------- viewport for scaler renderpass
+// ---------------------------------------------------------------- viewport for scaler renderpass
 
 struct ViewportData {
     x: f32,

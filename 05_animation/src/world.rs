@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use anyhow::Context;
 
@@ -10,7 +10,7 @@ use crate::ecs::{
 };
 use crate::renderer::InstanceData;
 
-// ------------------------------------------------------------------- world struct
+// ---------------------------------------------------------------- world struct
 
 pub struct World {
     entity_manager: EntityManager,
@@ -19,7 +19,7 @@ pub struct World {
     is_running: bool,
 }
 
-// ------------------------------------------------------------------- default empty world
+// ---------------------------------------------------------------- default empty world
 
 impl Default for World {
     /// creates empty world.
@@ -67,8 +67,8 @@ impl World {
     pub fn update_instances(&mut self) {
         self.instances.clear();
 
-        let new_instances = InstanceDataBuildSystem::update(&self.components);
-        self.instances.extend(new_instances);
+        self.instances
+            .extend(InstanceDataBuildSystem::update(&self.components));
     }
 
     /// pause/unpause.

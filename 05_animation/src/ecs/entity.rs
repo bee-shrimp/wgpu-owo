@@ -1,8 +1,8 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use crate::config::MAX_ENTITIES;
 
-// ------------------------------------------------------------------- struct for entities
+// ---------------------------------------------------------------- struct for entities
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Entity {
@@ -15,7 +15,7 @@ impl Entity {
     }
 }
 
-// ------------------------------------------------------------------- entity manager struct
+// ---------------------------------------------------------------- entity manager struct
 
 pub struct EntityManager {
     next_id: usize,
@@ -38,16 +38,16 @@ impl EntityManager {
     pub fn spawn(&mut self) -> Option<Entity> {
         if let Some(id) = self.free_list.pop() {
             //
-            // ------------------------------------------------------- reuse id if available
+            // ---------------------------------------------------- reuse id if available
             Some(Entity::new(id))
         } else if self.next_id < MAX_ENTITIES {
             //
-            // ------------------------------------------------------- new id
+            // ---------------------------------------------------- new id
             let id = self.next_id;
             self.next_id += 1;
             Some(Entity::new(id))
         } else {
-            // ------------------------------------------------------- slot is full
+            // ---------------------------------------------------- slot is full
             None
         }
     }

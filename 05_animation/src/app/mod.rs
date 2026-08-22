@@ -18,7 +18,7 @@ use crate::ecs::{Pos, Size};
 mod input;
 pub use input::InputHandler;
 
-// ------------------------------------------------------------------- App struct
+// ---------------------------------------------------------------- App struct
 
 #[derive(Default)]
 pub struct App {
@@ -30,7 +30,7 @@ pub struct App {
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        // ----------------------------------------------------------- create window object
+        // -------------------------------------------------------- create window object
 
         let window = Arc::new(
             event_loop
@@ -38,14 +38,14 @@ impl ApplicationHandler for App {
                 .expect("failed to create window"),
         );
 
-        // ----------------------------------------------------------- create world
+        // -------------------------------------------------------- create world
 
         self.world = World::default();
         self.world.init().expect("failed to init world");
 
         let instances = self.world.get_instances();
 
-        // ----------------------------------------------------------- init input handler
+        // -------------------------------------------------------- init input handler
 
         let window_size = window.inner_size();
 
@@ -54,26 +54,26 @@ impl ApplicationHandler for App {
             h: window_size.height as f32,
         });
 
-        // ----------------------------------------------------------- create renderer
+        // -------------------------------------------------------- create renderer
 
         self.renderer = Some(
             pollster::block_on(Renderer::new(window, event_loop, instances))
                 .expect("failed to create renderer"),
         );
 
-        // ----------------------------------------------------------- init renderer
+        // -------------------------------------------------------- init renderer
 
         self.renderer
             .as_mut()
             .expect("failed to find renderer")
             .update(instances);
 
-        // ----------------------------------------------------------- init other fields
+        // -------------------------------------------------------- init other fields
 
         self.last_frame_time = Some(Instant::now());
     }
 
-    // --------------------------------------------------------------- handle window events
+    // ------------------------------------------------------------ handle window events
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         let Some(renderer) = &mut self.renderer else {
@@ -81,14 +81,14 @@ impl ApplicationHandler for App {
         };
 
         match event {
-            // ------------------------------------------------------- close window
+            // ---------------------------------------------------- close window
             //
             WindowEvent::CloseRequested => {
                 println!("close requested; stopping");
                 event_loop.exit();
             }
 
-            // ------------------------------------------------------- resize
+            // ---------------------------------------------------- resize
             //
             WindowEvent::Resized(size) => {
                 renderer.resize(size.width, size.height);
@@ -98,7 +98,7 @@ impl ApplicationHandler for App {
                 });
             }
 
-            // ------------------------------------------------------- redraw
+            // ---------------------------------------------------- redraw
             //
             WindowEvent::RedrawRequested => match renderer.render() {
                 Ok(()) => {}
@@ -108,7 +108,7 @@ impl ApplicationHandler for App {
                 }
             },
 
-            // ------------------------------------------------------- detect cursor position
+            // ---------------------------------------------------- detect cursor position
             //
             WindowEvent::CursorMoved { position, .. } => {
                 self.input.update_cursor_pos(Pos {
@@ -117,14 +117,14 @@ impl ApplicationHandler for App {
                 });
             }
 
-            // ------------------------------------------------------- handle mouse inputs
+            // ---------------------------------------------------- handle mouse inputs
             //
             WindowEvent::MouseInput { button, state, .. } => match state {
                 ElementState::Pressed => self.input.button_pressed(button),
                 ElementState::Released => self.input.button_released(button),
             },
 
-            // ------------------------------------------------------- handle key inputs
+            // ---------------------------------------------------- handle key inputs
             //
             WindowEvent::KeyboardInput {
                 event:
@@ -143,11 +143,11 @@ impl ApplicationHandler for App {
         }
     }
 
-    // --------------------------------------------------------------- things to do after everything else
+    // ------------------------------------------------------------ things to do after everything else
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         //
-        // ----------------------------------------------------------- calculate dt
+        // -------------------------------------------------------- calculate dt
 
         let now = Instant::now();
 
@@ -158,33 +158,33 @@ impl ApplicationHandler for App {
 
         self.last_frame_time = Some(now);
 
-        // ----------------------------------------------------------- quit if key q is pressed
+        // -------------------------------------------------------- quit if key q is pressed
 
         if self.input.has_key(KeyCode::KeyQ) {
             event_loop.exit();
         }
 
-        // ----------------------------------------------------------- return if paused and space is not pressed
+        // -------------------------------------------------------- return if paused and space is not pressed
 
         if !self.world.is_running() && !self.input.has_key(KeyCode::Space) {
             return;
         }
 
-        // ----------------------------------------------------------- pause/resume if space is pressed
+        // -------------------------------------------------------- pause/resume if space is pressed
 
         if self.input.has_key(KeyCode::Space) {
             self.world.toggle_running();
             return;
         }
 
-        // ----------------------------------------------------------- mouse state update
+        // -------------------------------------------------------- mouse state update
 
         self.input.update_mouse_state();
         // if !self.input.has_triggered(MouseButton::Left) {
         //     return;
         // }
 
-        // ----------------------------------------------------------- update world if clicked
+        // -------------------------------------------------------- update world if clicked
 
         let click_pos = self.input.get_click_pos(MouseButton::Left);
         // .expect("failed to get click pos");
@@ -192,7 +192,7 @@ impl ApplicationHandler for App {
             .update(click_pos, dt)
             .expect("failed to update world");
 
-        // ----------------------------------------------------------- update
+        // -------------------------------------------------------- update
         // self.world.update(dt).expect("failed to update world");
 
         let renderer = self.renderer.as_mut().expect("failed to find renderer");

@@ -1,15 +1,16 @@
+// ---------------------------------------------------------------- imports
 use anyhow::Context;
 
 use image::GenericImageView;
 
-// ------------------------------------------------------------------- texture size for create_texture()
+// ---------------------------------------------------------------- texture size for create_texture()
 
 pub struct TextureSize {
     pub width: u32,
     pub height: u32,
 }
 
-// ------------------------------------------------------------------- create texture with image data
+// ---------------------------------------------------------------- create texture with image data
 
 pub fn create_diffuse_texture(
     device: &wgpu::Device,
@@ -66,7 +67,7 @@ pub fn create_diffuse_texture(
     Ok(diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default()))
 }
 
-// ------------------------------------------------------------------- create texture to draw onto / to be read
+// ---------------------------------------------------------------- create texture to draw onto / to be read
 
 pub fn create_texture(device: &wgpu::Device, label: &str, size: &TextureSize) -> wgpu::TextureView {
     let new_texture_size = wgpu::Extent3d {

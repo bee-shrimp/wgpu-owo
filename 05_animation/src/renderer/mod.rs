@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use anyhow::Context;
 
@@ -23,10 +23,10 @@ mod textures;
 // accessible from other modules.
 pub use buffers::InstanceData;
 
-// ------------------------------------------------------------------- renderer
+// ---------------------------------------------------------------- renderer
 
 pub struct Renderer {
-    // --------------------------------------------------------------- init
+    // ------------------------------------------------------------ init
     window: Arc<Window>,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -34,7 +34,7 @@ pub struct Renderer {
     config: wgpu::SurfaceConfiguration,
     is_surface_configured: bool,
 
-    // --------------------------------------------------------------- buffers
+    // ------------------------------------------------------------ buffers
     uniform_buffer: wgpu::Buffer,
     fullscreen_vertex_buffer: wgpu::Buffer,
     rect_vertex_buffer: wgpu::Buffer,
@@ -43,14 +43,14 @@ pub struct Renderer {
 
     index_buffer: wgpu::Buffer,
 
-    // --------------------------------------------------------------- textures
+    // ------------------------------------------------------------ textures
     mid_texture_view: wgpu::TextureView,
 
-    // --------------------------------------------------------------- bind groups
+    // ------------------------------------------------------------ bind groups
     mid_bind_group: wgpu::BindGroup,
     scaler_bind_group: wgpu::BindGroup,
 
-    // --------------------------------------------------------------- pipelines
+    // ------------------------------------------------------------ pipelines
     mid_render_pipeline: wgpu::RenderPipeline,
     scaler_render_pipeline: wgpu::RenderPipeline,
 }
@@ -61,13 +61,13 @@ impl Renderer {
         event_loop: &ActiveEventLoop,
         instances: &[InstanceData],
     ) -> anyhow::Result<Self> {
-        // ----------------------------------------------------------- init wgpu
+        // -------------------------------------------------------- init wgpu
 
         let (adapter, device, queue, surface, config) = init::init_wgpu(&window, event_loop)
             .await
             .context("failed to initialise wgpu")?;
 
-        // ----------------------------------------------------------- samplers
+        // -------------------------------------------------------- samplers
 
         let sampler_nearest = init::create_sampler(
             &device,
@@ -75,7 +75,7 @@ impl Renderer {
             wgpu::MipmapFilterMode::Nearest,
         );
 
-        // ----------------------------------------------------------- buffers
+        // -------------------------------------------------------- buffers
 
         let uniform_buffer = buffers::create_uniform_buffer(&device);
 
@@ -95,7 +95,7 @@ impl Renderer {
 
         let index_buffer = buffers::create_index_buffer(&device, buffers::RECT_INDICES);
 
-        // ----------------------------------------------------------- bind group layouts
+        // -------------------------------------------------------- bind group layouts
 
         // let u_bind_group_layout = bindgroups::create_u_bind_group_layout(&device);
 
@@ -105,7 +105,7 @@ impl Renderer {
 
         // let t_t_s_bind_group_layout = bindgroups::create_t_t_s_bind_group_layout(&device);
 
-        // ----------------------------------------------------------- load shaders
+        // -------------------------------------------------------- load shaders
 
         let mid_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("mid shader"),
@@ -117,14 +117,14 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/scaler.wgsl"))),
         });
 
-        // ----------------------------------------------------------- load image
+        // -------------------------------------------------------- load image
 
         let diffuse_bytes = include_bytes!("../../img/robot-256.png");
 
         let diffuse_texture_view =
             textures::create_diffuse_texture(&device, &queue, "diffuse texture", diffuse_bytes)?;
 
-        // ----------------------------------------------------------- mid
+        // -------------------------------------------------------- mid
 
         let mid_texture_view = textures::create_texture(
             &device,
@@ -152,7 +152,7 @@ impl Renderer {
             wgpu::BlendState::ALPHA_BLENDING,
         );
 
-        // ----------------------------------------------------------- scaler
+        // -------------------------------------------------------- scaler
 
         let scaler_bind_group = bindgroups::create_t_s_bind_group(
             &device,
@@ -170,7 +170,7 @@ impl Renderer {
             &scaler_shader,
         );
 
-        // ----------------------------------------------------------- renderer
+        // -------------------------------------------------------- renderer
 
         let renderer = Self {
             window,
@@ -205,7 +205,7 @@ impl Renderer {
         }
         // no render unless the surface is configured
 
-        // ----------------------------------------------------------- surface texture view
+        // -------------------------------------------------------- surface texture view
 
         let surface_texture = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture)
@@ -228,7 +228,7 @@ impl Renderer {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        // ----------------------------------------------------------- execute renderpasses
+        // -------------------------------------------------------- execute renderpasses
 
         let mut encoder = self
             .device
@@ -264,13 +264,13 @@ impl Renderer {
         Ok(())
     }
 
-    // --------------------------------------------------------------- get window for App
+    // ------------------------------------------------------------ get window for App
 
     pub fn get_window(&self) -> &Window {
         &self.window
     }
 
-    // --------------------------------------------------------------- resize surface
+    // ------------------------------------------------------------ resize surface
 
     pub fn resize(&mut self, width: u32, height: u32) {
         if width > 0 && height > 0 {
@@ -281,10 +281,10 @@ impl Renderer {
         }
     }
 
-    // --------------------------------------------------------------- update uniform buffer
+    // ------------------------------------------------------------ update uniform buffer
 
-    pub fn update(&mut self, instances: &[InstanceData]) {
-        buffers::update_uniform_buffer(&self.queue, &mut self.uniform_buffer);
-        buffers::update_instance_buffer(&self.queue, &mut self.instance_buffer, instances);
+    pub fn update(&self, instances: &[InstanceData]) {
+        buffers::update_uniform_buffer(&self.queue, &self.uniform_buffer);
+        buffers::update_instance_buffer(&self.queue, &self.instance_buffer, instances);
     }
 }

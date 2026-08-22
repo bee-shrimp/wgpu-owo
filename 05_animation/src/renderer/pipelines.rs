@@ -1,9 +1,9 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use crate::renderer::buffers::{InstanceData, Vertex};
 use wgpu::PipelineCompilationOptions;
 
-// ------------------------------------------------------------------- create render pipeline
+// ---------------------------------------------------------------- create render pipeline
 
 // pub fn create_pipeline(
 //     device: &wgpu::Device,
@@ -45,7 +45,7 @@ use wgpu::PipelineCompilationOptions;
 //     })
 // }
 
-// ------------------------------------------------------------------- create render pipeline w/ instance buffer
+// ---------------------------------------------------------------- create render pipeline w/ instance buffer
 
 pub fn create_pipeline_with_instance(
     device: &wgpu::Device,

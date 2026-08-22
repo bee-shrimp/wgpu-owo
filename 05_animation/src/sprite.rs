@@ -1,7 +1,9 @@
-// ------------------------------------------------------------------- enum of sprites
+// ---------------------------------------------------------------- imports
+
 use crate::config::{SPRITE_GRID_SIZE, SPRITE_SHEET_SIZE};
 use crate::ecs::Size;
 
+// ---------------------------------------------------------------- enum of sprites
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Sprite {
     #[default]
@@ -14,7 +16,7 @@ pub struct Animation {
     pub max_flame_idx: u8,
 }
 
-// ------------------------------------------------------------------- return SpriteData of sprite
+// ---------------------------------------------------------------- Sprite methods
 
 impl Sprite {
     /// returns `Animation` of self
@@ -44,7 +46,7 @@ impl Sprite {
     }
 }
 
-// ------------------------------------------------------------------- structs for SpriteData
+// ---------------------------------------------------------------- structs for SpriteData
 
 #[derive(Debug, Clone, Copy)]
 pub struct UVOffset {
@@ -58,13 +60,15 @@ pub struct GridPos {
     pub gy: u8,
 }
 
-// ------------------------------------------------------------------- SpriteData struct
+// ---------------------------------------------------------------- SpriteData struct
 
 #[derive(Debug, Clone, Copy)]
 pub struct SpriteData {
     pub uv_offset: UVOffset,
     pub uv_size: Size,
 }
+
+// ---------------------------------------------------------------- SpriteData methods
 
 impl SpriteData {
     fn new(g_pos: GridPos) -> Self {

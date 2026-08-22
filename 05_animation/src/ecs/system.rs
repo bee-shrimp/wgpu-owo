@@ -6,7 +6,7 @@ use crate::config::{MAX_COL, MAX_ENTITIES, RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
 use crate::sprite::{Animation, Sprite};
 
-// ------------------------------------------------------------------- create entity struct
+// ---------------------------------------------------------------- create entity system
 
 pub struct CreateEntitySystem;
 
@@ -19,11 +19,8 @@ impl CreateEntitySystem {
         sprite: Sprite,
     ) -> anyhow::Result<()> {
         for _ in 0..MAX_ENTITIES {
-            // ----------------------------------------------------------- get usable id
-
             let entity = entity_manager.spawn().context("no free slot")?;
 
-            // ----------------------------------------------------------- add data to ComponentStorage[entity.index]
             components
                 .positions
                 .insert(
@@ -65,16 +62,14 @@ impl CreateEntitySystem {
     }
 }
 
-// ------------------------------------------------------------------- instance update system struct
+// ---------------------------------------------------------------- instance update system
 
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
-    /// creates Vec of `InstanceData` from components data.
-    pub fn update(components: &Components) -> Vec<InstanceData> {
-        (0..MAX_ENTITIES)
-            .filter_map(|id| build_instance_data(Entity::new(id), components))
-            .collect()
+    /// returns iterator of `InstanceData` built from components data.
+    pub fn update(components: &Components) -> impl Iterator<Item = InstanceData> {
+        (0..MAX_ENTITIES).filter_map(|id| build_instance_data(Entity::new(id), components))
     }
 }
 
@@ -93,11 +88,14 @@ pub fn build_instance_data(entity: Entity, components: &Components) -> Option<In
     })
 }
 
+// ---------------------------------------------------------------- animation system
+
 pub struct AnimationSystem;
 impl AnimationSystem {
     pub fn update(components: &mut Components, dt: f32) -> anyhow::Result<()> {
-        for id in 0..MAX_ENTITIES {
-            let entity = Entity::new(id);
+        for i in 0..MAX_ENTITIES {
+            let entity = Entity::new(i);
+
             let sprite = components
                 .sprites
                 .get(entity)
@@ -105,28 +103,23 @@ impl AnimationSystem {
 
             let animation = sprite.animation();
 
-            // -----------------------------------------------------------
+            let elapsed_plus_dt = *components
+                .elapsed
+                .get(entity)
+                .context("failed to get mut elapsed")?
+                + dt;
 
             let next_flame = calc_next_flame(entity, components, &animation)?;
 
-            let elapsed = components
-                .elapsed
-                .get(entity)
-                .context("failed to get mut elapsed")?;
-
-            let elapsed_plus_dt = *elapsed + dt;
-
-            let next_elapsed: f32;
-
-            if elapsed_plus_dt >= animation.flame_duration {
+            let next_elapsed = if elapsed_plus_dt >= animation.flame_duration {
                 *components
                     .flames
                     .get_mut(entity)
                     .context("failed to get mut flame")? = next_flame;
-                next_elapsed = 0.0;
+                0.0
             } else {
-                next_elapsed = elapsed_plus_dt;
-            }
+                elapsed_plus_dt
+            };
 
             *components
                 .elapsed
@@ -158,7 +151,7 @@ fn calc_next_flame(
     Ok(next_flame)
 }
 
-// ------------------------------------------------------------------- toggle sprite system
+// ---------------------------------------------------------------- toggle sprite system
 
 // pub struct ToggleSpriteSystem;
 //

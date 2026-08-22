@@ -1,10 +1,12 @@
+// ---------------------------------------------------------------- imports
+
 use std::mem;
 use wgpu::util::DeviceExt;
 
 use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH};
 use glam::{Mat4, Vec3, camera};
 
-// ------------------------------------------------------------------- struct for uniform buffer
+// ---------------------------------------------------------------- struct for uniform buffer
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -13,7 +15,7 @@ pub struct Uniforms {
     pub projection_matrix: [[f32; 4]; 4],
 }
 
-// ------------------------------------------------------------------- struct for vertex buffer
+// ---------------------------------------------------------------- struct for vertex buffer
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -22,7 +24,7 @@ pub struct Vertex {
     uv: [f32; 2],
 }
 
-// ------------------------------------------------------------------- descriptor for VertexBufferLayout
+// ---------------------------------------------------------------- descriptor for VertexBufferLayout
 
 impl Vertex {
     const ATTRIBS: [wgpu::VertexAttribute; 2] =
@@ -38,7 +40,7 @@ impl Vertex {
     }
 }
 
-// ------------------------------------------------------------------- full screen triangle
+// ---------------------------------------------------------------- full screen triangle
 
 pub const FULLSCREEN_VERTICES: &[Vertex] = &[
     Vertex {
@@ -55,7 +57,7 @@ pub const FULLSCREEN_VERTICES: &[Vertex] = &[
     },
 ];
 
-// ------------------------------------------------------------------- vertices to draw a rectangle
+// ---------------------------------------------------------------- vertices to draw a rectangle
 
 pub const RECT_VERTICES: &[Vertex] = &[
     Vertex {
@@ -78,7 +80,7 @@ pub const RECT_VERTICES: &[Vertex] = &[
 
 pub const RECT_INDICES: &[u16] = &[0, 1, 2, /**/ 1, 3, 2];
 
-// ------------------------------------------------------------------- struct for instance buffer
+// ---------------------------------------------------------------- struct for instance buffer
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -89,7 +91,7 @@ pub struct InstanceData {
     pub sprite_size: [f32; 2],
 }
 
-// ------------------------------------------------------------------- descriptor for VertexBufferLayout
+// ---------------------------------------------------------------- descriptor for VertexBufferLayout
 
 impl InstanceData {
     const ATTRIBS: [wgpu::VertexAttribute; 4] =
@@ -105,7 +107,7 @@ impl InstanceData {
     }
 }
 
-// ------------------------------------------------------------------- functions to create buffer
+// ---------------------------------------------------------------- functions to create buffer
 
 pub fn create_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
     let initial_uniforms = Uniforms {

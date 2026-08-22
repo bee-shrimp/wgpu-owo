@@ -1,10 +1,10 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use crate::config::MAX_ENTITIES;
 use crate::ecs::entity::Entity;
 use crate::sprite::Sprite;
 
-// ------------------------------------------------------------------- struct for rects
+// ---------------------------------------------------------------- struct for rects
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Pos {
@@ -18,7 +18,7 @@ pub struct Size {
     pub h: f32,
 }
 
-// ------------------------------------------------------------------- components struct for world
+// ---------------------------------------------------------------- components struct for world
 
 pub struct Components {
     pub positions: ComponentStorage<Pos>,
@@ -28,7 +28,7 @@ pub struct Components {
     pub elapsed: ComponentStorage<f32>,
 }
 
-// ------------------------------------------------------------------- component srorage
+// ---------------------------------------------------------------- component srorage
 
 pub struct ComponentStorage<T> {
     components: [T; MAX_ENTITIES],
