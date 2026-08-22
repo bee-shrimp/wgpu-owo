@@ -151,15 +151,6 @@ fn calc_next_flame(
     Ok(next_flame)
 }
 
-    let next_flame: u8 = if flame_plus_one > animation.max_flame_idx {
-        0
-    } else {
-        flame_plus_one
-    };
-
-    Ok(next_flame)
-}
-
 // ------------------------------------------------------------------- toggle sprite system
 
 // pub struct ToggleSpriteSystem;

@@ -20,7 +20,6 @@ bytemuck = { version = "1.25", features = [ "derive" ] }
 image = {version = "0.25", features = ["png","jpeg"]}
 
 glam = "0.33"
-rand = "0.10.2"
 
 [lints]
 workspace = true
