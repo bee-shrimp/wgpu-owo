@@ -108,3 +108,35 @@ how it works:
 what i learnt:  
 
 - basics of texture atlas.  
+
+## 05_animation
+
+what it does:  
+
+- draw grids with robot pixel arts.  
+- robot is animated.  
+
+how it works:  
+
+- each grid is an entity.  
+- entities have flame and elapsed.  
+- AnimationSystem use these data to animate.  
+- animation frame changes when elapsed is bigger than a threshold.  
+- elapsed grows with dt and resets with frame change.  
+- also ecs is less rudimentary now.  
+- also also modules are smaller now.  
+
+what i learnt:  
+
+- animation basics.  
+- i love smaller modules/functions.  
+
+## 06_death
+
+what it does:
+
+- draw grids with robot pixel arts.  
+- robot desappears with left mouse click.  
+- robot reappears with right mouse click.  
+
+how it works:  
