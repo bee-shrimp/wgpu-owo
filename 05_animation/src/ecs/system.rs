@@ -6,7 +6,7 @@ use crate::config::{MAX_COL, MAX_ENTITIES, RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
 use crate::sprite::{Animation, Sprite};
 
-// ---------------------------------------------------------------- create entity system
+// ------------------------------------------------------------------- create entity system
 
 pub struct CreateEntitySystem;
 
@@ -62,7 +62,7 @@ impl CreateEntitySystem {
     }
 }
 
-// ---------------------------------------------------------------- instance update system
+// ------------------------------------------------------------------- instance update system
 
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
@@ -88,7 +88,7 @@ pub fn build_instance_data(entity: Entity, components: &Components) -> Option<In
     })
 }
 
-// ---------------------------------------------------------------- animation system
+// ------------------------------------------------------------------- animation system
 
 pub struct AnimationSystem;
 impl AnimationSystem {
@@ -151,7 +151,16 @@ fn calc_next_flame(
     Ok(next_flame)
 }
 
-// ---------------------------------------------------------------- toggle sprite system
+    let next_flame: u8 = if flame_plus_one > animation.max_flame_idx {
+        0
+    } else {
+        flame_plus_one
+    };
+
+    Ok(next_flame)
+}
+
+// ------------------------------------------------------------------- toggle sprite system
 
 // pub struct ToggleSpriteSystem;
 //
