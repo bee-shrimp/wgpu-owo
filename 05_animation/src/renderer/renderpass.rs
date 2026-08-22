@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------- imports
 
 use crate::{
-    config::{self, LOGIC_HEIGHT, LOGIC_WIDTH},
+    config::{LOGIC_HEIGHT, LOGIC_WIDTH},
     ecs::Size,
     renderer::buffers,
 };
@@ -25,6 +25,7 @@ pub fn draw_mid_renderpass(
     rect_vertex_buffer: &wgpu::Buffer,
     instance_buffer: &wgpu::Buffer,
     index_buffer: &wgpu::Buffer,
+    num_instances: u8,
 ) {
     // ----------------------------------------------------------- mid renderpass
 
@@ -50,7 +51,6 @@ pub fn draw_mid_renderpass(
         multiview_mask: None,
     });
 
-    let num_instances = config::MAX_ENTITIES as u32;
     let num_indices = buffers::RECT_INDICES.len() as u32;
 
     // ----------------------------------------------------------- use the renderpass
@@ -60,7 +60,7 @@ pub fn draw_mid_renderpass(
     mid_renderpass.set_vertex_buffer(0, rect_vertex_buffer.slice(..));
     mid_renderpass.set_vertex_buffer(1, instance_buffer.slice(..));
     mid_renderpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-    mid_renderpass.draw_indexed(0..num_indices, 0, 0..num_instances);
+    mid_renderpass.draw_indexed(0..num_indices, 0, 0..u32::from(num_instances));
 
     // ----------------------------------------------------------- end the renderpass
 

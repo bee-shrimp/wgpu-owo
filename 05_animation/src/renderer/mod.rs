@@ -39,6 +39,7 @@ pub struct Renderer {
     fullscreen_vertex_buffer: wgpu::Buffer,
     rect_vertex_buffer: wgpu::Buffer,
 
+    num_instances: u8,
     instance_buffer: wgpu::Buffer,
 
     index_buffer: wgpu::Buffer,
@@ -92,6 +93,7 @@ impl Renderer {
         );
 
         let instance_buffer = buffers::create_instance_buffer(&device, instances);
+        let num_instances = instances.len() as u8;
 
         let index_buffer = buffers::create_index_buffer(&device, buffers::RECT_INDICES);
 
@@ -186,6 +188,7 @@ impl Renderer {
             uniform_buffer,
             instance_buffer,
             index_buffer,
+            num_instances,
 
             mid_texture_view,
 
@@ -244,6 +247,7 @@ impl Renderer {
             &self.rect_vertex_buffer,
             &self.instance_buffer,
             &self.index_buffer,
+            self.num_instances,
         );
 
         renderpass::draw_scaler_renderpass(
@@ -283,8 +287,9 @@ impl Renderer {
 
     // ------------------------------------------------------------ update uniform buffer
 
-    pub fn update(&self, instances: &[InstanceData]) {
+    pub fn update(&mut self, instances: &[InstanceData]) {
         buffers::update_uniform_buffer(&self.queue, &self.uniform_buffer);
         buffers::update_instance_buffer(&self.queue, &self.instance_buffer, instances);
+        self.num_instances = instances.len() as u8;
     }
 }
