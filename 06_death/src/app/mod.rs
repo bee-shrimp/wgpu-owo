@@ -180,14 +180,15 @@ impl ApplicationHandler for App {
         // -------------------------------------------------------- mouse state update
 
         self.input.update_mouse_state();
-        // if !self.input.has_triggered(MouseButton::Left) {
-        //     return;
-        // }
+
+        if !self.input.has_triggered(MouseButton::Left) {
+            return;
+        }
 
         // -------------------------------------------------------- update world if clicked
 
         let click_pos = self.input.get_click_pos(MouseButton::Left);
-        // .expect("failed to get click pos");
+
         self.world
             .update(click_pos, dt)
             .expect("failed to update world");

@@ -11,6 +11,7 @@ use winit::window::Window;
 use crate::{
     config::{LOGIC_HEIGHT, LOGIC_WIDTH},
     ecs::Size,
+    renderer::buffers::create_instance_buffer,
 };
 
 mod bindgroups;
@@ -40,8 +41,9 @@ pub struct Renderer {
     rect_vertex_buffer: wgpu::Buffer,
 
     instance_buffer: wgpu::Buffer,
-
     index_buffer: wgpu::Buffer,
+
+    num_instances: u32,
 
     // ------------------------------------------------------------ textures
     mid_texture_view: wgpu::TextureView,
@@ -92,6 +94,7 @@ impl Renderer {
         );
 
         let instance_buffer = buffers::create_instance_buffer(&device, instances);
+        let num_instances = instances.len() as u32;
 
         let index_buffer = buffers::create_index_buffer(&device, buffers::RECT_INDICES);
 
@@ -187,6 +190,8 @@ impl Renderer {
             instance_buffer,
             index_buffer,
 
+            num_instances,
+
             mid_texture_view,
 
             mid_bind_group,
@@ -244,6 +249,7 @@ impl Renderer {
             &self.rect_vertex_buffer,
             &self.instance_buffer,
             &self.index_buffer,
+            self.num_instances,
         );
 
         renderpass::draw_scaler_renderpass(
@@ -283,8 +289,11 @@ impl Renderer {
 
     // ------------------------------------------------------------ update uniform buffer
 
-    pub fn update(&self, instances: &[InstanceData]) {
+    pub fn update(&mut self, instances: &[InstanceData]) {
         buffers::update_uniform_buffer(&self.queue, &self.uniform_buffer);
+
+        self.instance_buffer = create_instance_buffer(&self.device, instances);
         buffers::update_instance_buffer(&self.queue, &self.instance_buffer, instances);
+        self.num_instances = instances.len() as u32;
     }
 }

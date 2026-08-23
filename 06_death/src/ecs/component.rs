@@ -3,7 +3,7 @@
 use crate::animation::AnimationState;
 use crate::config::MAX_ENTITIES;
 use crate::ecs::entity::Entity;
-// use crate::sprite::Sprite;
+use crate::sprite::{Sprite, SpriteData};
 
 // ---------------------------------------------------------------- struct for rects
 
@@ -24,8 +24,8 @@ pub struct Size {
 pub struct Components {
     pub positions: ComponentStorage<Pos>,
     pub sizes: ComponentStorage<Size>,
-    // pub sprites: ComponentStorage<Sprite>,
-    pub animations: ComponentStorage<AnimationState>,
+    // pub animations: ComponentStorage<AnimationState>,
+    pub sprites: ComponentStorage<Sprite>,
 }
 
 // ---------------------------------------------------------------- component srorage
@@ -78,6 +78,7 @@ impl<T: Default> ComponentStorage<T> {
     //     Ok(())
     // }
     //
+
     // /// returns iterator (Entity, &T).
     // pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
     //     (0..MAX_ENTITIES).filter_map(move |i| {
@@ -89,8 +90,8 @@ impl<T: Default> ComponentStorage<T> {
     //     })
     // }
     //
-    // /// returns how many entities are alive.
-    // pub fn count_alive(&self) -> usize {
-    //     self.alive.iter().filter(|&&a| a).count()
-    // }
+    /// returns how many entities are alive.
+    pub fn count_alive(&self) -> usize {
+        self.alive.iter().filter(|&&a| a).count()
+    }
 }
