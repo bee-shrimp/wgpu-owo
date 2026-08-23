@@ -1,8 +1,9 @@
 // ---------------------------------------------------------------- imports
 
+use crate::animation::AnimationState;
 use crate::config::MAX_ENTITIES;
 use crate::ecs::entity::Entity;
-use crate::sprite::Sprite;
+// use crate::sprite::Sprite;
 
 // ---------------------------------------------------------------- struct for rects
 
@@ -23,9 +24,8 @@ pub struct Size {
 pub struct Components {
     pub positions: ComponentStorage<Pos>,
     pub sizes: ComponentStorage<Size>,
-    pub sprites: ComponentStorage<Sprite>,
-    pub flames: ComponentStorage<u8>,
-    pub elapsed: ComponentStorage<f32>,
+    // pub sprites: ComponentStorage<Sprite>,
+    pub animations: ComponentStorage<AnimationState>,
 }
 
 // ---------------------------------------------------------------- component srorage

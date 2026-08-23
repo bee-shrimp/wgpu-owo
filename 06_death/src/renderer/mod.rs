@@ -119,7 +119,7 @@ impl Renderer {
 
         // -------------------------------------------------------- load image
 
-        let diffuse_bytes = include_bytes!("../../img/robot-256.png");
+        let diffuse_bytes = include_bytes!("../../img/robot_spritesheet.png");
 
         let diffuse_texture_view =
             textures::create_diffuse_texture(&device, &queue, "diffuse texture", diffuse_bytes)?;

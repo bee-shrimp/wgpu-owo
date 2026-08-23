@@ -15,6 +15,8 @@ mod renderer;
 mod sprite;
 mod world;
 
+mod animation;
+
 // ---------------------------------------------------------------- main
 
 fn main() -> anyhow::Result<()> {

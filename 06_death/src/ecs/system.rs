@@ -1,22 +1,32 @@
+use crate::animation::{AnimationId, AnimationRegistry, AnimationState};
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
 use anyhow::Context;
 
 use crate::config::{MAX_COL, MAX_ENTITIES, RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
-use crate::sprite::{Animation, Sprite};
+use crate::sprite::{/*Sprite,*/ SpriteData};
 
 // ------------------------------------------------------------------- create entity system
 
 pub struct CreateEntitySystem;
 
 impl CreateEntitySystem {
+    pub fn create_animated_entities_with_pos(
+        entity_manager: &mut EntityManager,
+        components: &mut Components,
+        pos: Pos,
+        anim_id: AnimationId,
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
     /// adds data to `ComponentStorage`[[entity.index]].
     /// uses `MAX_ENTITIES` to determine the number of entities.
     pub fn create_grid_entities(
         entity_manager: &mut EntityManager,
         components: &mut Components,
-        sprite: Sprite,
+        // sprite: Sprite,
+        anim_id: AnimationId,
     ) -> anyhow::Result<()> {
         for _ in 0..MAX_ENTITIES {
             let entity = entity_manager.spawn().context("no free slot")?;
@@ -43,20 +53,22 @@ impl CreateEntitySystem {
                 )
                 .context("failed to add size")?;
 
-            components
-                .sprites
-                .insert(entity, sprite)
-                .context("failed to add sprite data")?;
+            // components
+            //     .sprites
+            //     .insert(entity, sprite)
+            //     .context("failed to add sprite data")?;
 
             components
-                .flames
-                .insert(entity, 0)
-                .context("failed to add flame")?;
-
-            components
-                .elapsed
-                .insert(entity, 0.0)
-                .context("failed to add elapsed")?;
+                .animations
+                .insert(
+                    entity,
+                    AnimationState {
+                        current_frame: 0,
+                        elapsed: 0.0,
+                        id: anim_id.index as u8,
+                    },
+                )
+                .context("failed to add animation")?;
         }
         Ok(())
     }
@@ -68,17 +80,27 @@ impl CreateEntitySystem {
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
     /// returns iterator of `InstanceData` built from components data.
-    pub fn update(components: &Components) -> impl Iterator<Item = InstanceData> {
-        (0..MAX_ENTITIES).filter_map(|id| build_instance_data(Entity::new(id), components))
+    pub fn update(
+        components: &Components,
+        registry: &AnimationRegistry,
+    ) -> impl Iterator<Item = InstanceData> {
+        (0..MAX_ENTITIES)
+            .filter_map(|id| build_instance_data(Entity::new(id), components, registry))
     }
 }
 
 /// creates `InstanceData` for each entity.
-pub fn build_instance_data(entity: Entity, components: &Components) -> Option<InstanceData> {
+pub fn build_instance_data(
+    entity: Entity,
+    components: &Components,
+    registry: &AnimationRegistry,
+) -> Option<InstanceData> {
     let position = components.positions.get(entity)?;
     let size = components.sizes.get(entity)?;
-    let flame = components.flames.get(entity)?;
-    let sprite_data = components.sprites.get(entity)?.uv_data(*flame);
+
+    let anim_state = components.animations.get(entity)?;
+    let g_pos = registry.get_frame(AnimationId::new(anim_state.id), anim_state.current_frame);
+    let sprite_data = SpriteData::new(g_pos);
 
     Some(InstanceData {
         position: [position.x, position.y],
@@ -92,63 +114,35 @@ pub fn build_instance_data(entity: Entity, components: &Components) -> Option<In
 
 pub struct AnimationSystem;
 impl AnimationSystem {
-    pub fn update(components: &mut Components, dt: f32) -> anyhow::Result<()> {
+    pub fn update(
+        components: &mut Components,
+        registry: &AnimationRegistry,
+        dt: f32,
+    ) -> anyhow::Result<()> {
         for i in 0..MAX_ENTITIES {
             let entity = Entity::new(i);
 
-            let sprite = components
-                .sprites
+            let mut state = *components
+                .animations
                 .get(entity)
-                .context("failed to get sprite")?;
+                .context("failed to get animation state")?;
 
-            let animation = sprite.animation();
+            state.elapsed += dt;
 
-            let elapsed_plus_dt = *components
-                .elapsed
-                .get(entity)
-                .context("failed to get mut elapsed")?
-                + dt;
+            let def = registry.get_def(AnimationId::new(state.id));
 
-            let next_flame = calc_next_flame(entity, components, &animation)?;
-
-            let next_elapsed = if elapsed_plus_dt >= animation.flame_duration {
-                *components
-                    .flames
-                    .get_mut(entity)
-                    .context("failed to get mut flame")? = next_flame;
-                0.0
-            } else {
-                elapsed_plus_dt
-            };
+            if state.elapsed >= def.duration_per_frame {
+                state.elapsed -= def.duration_per_frame;
+                state.current_frame = (state.current_frame + 1) % def.frame_count as u8;
+            }
 
             *components
-                .elapsed
+                .animations
                 .get_mut(entity)
-                .context("failed to get mut elapsed")? = next_elapsed;
+                .context("failed to get mut animation")? = state;
         }
         Ok(())
     }
-}
-
-fn calc_next_flame(
-    entity: Entity,
-    components: &Components,
-    animation: &Animation,
-) -> anyhow::Result<u8> {
-    let flame = components
-        .flames
-        .get(entity)
-        .context("failed to get mut flame")?;
-
-    let flame_plus_one = *flame + 1;
-
-    let next_flame: u8 = if flame_plus_one > animation.max_flame_idx {
-        0
-    } else {
-        flame_plus_one
-    };
-
-    Ok(next_flame)
 }
 
 // ------------------------------------------------------------------- toggle sprite system

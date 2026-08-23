@@ -4,6 +4,7 @@ use anyhow::Context;
 
 use crate::config::MAX_ENTITIES;
 
+use crate::animation::{AnimationId, AnimationRegistry, init_animation_registry};
 use crate::ecs::{
     AnimationSystem, ComponentStorage, Components, CreateEntitySystem, EntityManager,
     InstanceDataBuildSystem, Pos,
@@ -16,6 +17,7 @@ pub struct World {
     entity_manager: EntityManager,
     pub components: Components,
     instances: Vec<InstanceData>,
+    anim_registry: AnimationRegistry,
     is_running: bool,
 }
 
@@ -29,11 +31,11 @@ impl Default for World {
             components: Components {
                 positions: ComponentStorage::new(),
                 sizes: ComponentStorage::new(),
-                sprites: ComponentStorage::new(),
-                flames: ComponentStorage::new(),
-                elapsed: ComponentStorage::new(),
+                // sprites: ComponentStorage::new(),
+                animations: ComponentStorage::new(),
             },
             instances: Vec::new(),
+            anim_registry: AnimationRegistry::new(),
             is_running: true,
         }
     }
@@ -42,10 +44,12 @@ impl Default for World {
 impl World {
     /// initialises world with entities.
     pub fn init(&mut self) -> anyhow::Result<()> {
+        init_animation_registry(&mut self.anim_registry)?;
         CreateEntitySystem::create_grid_entities(
             &mut self.entity_manager,
             &mut self.components,
-            crate::sprite::Sprite::Walk,
+            // crate::sprite::Sprite::Walk,
+            AnimationId::new(1),
         )
         .context("failed to create entities")?;
 
@@ -57,7 +61,7 @@ impl World {
 
     /// updates components.
     pub fn update(&mut self, _click_pos: Option<Pos>, dt: f32) -> anyhow::Result<()> {
-        AnimationSystem::update(&mut self.components, dt)?;
+        AnimationSystem::update(&mut self.components, &self.anim_registry, dt)?;
         self.update_instances();
 
         Ok(())
@@ -67,8 +71,10 @@ impl World {
     pub fn update_instances(&mut self) {
         self.instances.clear();
 
-        self.instances
-            .extend(InstanceDataBuildSystem::update(&self.components));
+        self.instances.extend(InstanceDataBuildSystem::update(
+            &self.components,
+            &self.anim_registry,
+        ));
     }
 
     /// pause/unpause.
