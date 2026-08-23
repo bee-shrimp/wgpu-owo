@@ -24,6 +24,7 @@ struct MouseState {
 pub struct InputHandler {
     pressed_keys: HashSet<KeyCode>,
     mouse_left: MouseState,
+    mouse_right: MouseState,
     cursor_pos: Pos,
     window_size: Size,
 }
@@ -36,6 +37,7 @@ impl InputHandler {
         Self {
             pressed_keys: HashSet::new(),
             mouse_left: MouseState::default(),
+            mouse_right: MouseState::default(),
             cursor_pos: Pos::default(),
             window_size,
         }
@@ -74,19 +76,31 @@ impl InputHandler {
         }
 
         self.mouse_left.was_pressed = self.mouse_left.is_pressed;
+
+        self.mouse_right.has_triggered =
+            !self.mouse_right.was_pressed && self.mouse_right.is_pressed;
+        if self.mouse_right.has_triggered {
+            self.mouse_right.pos = cursor_pos_to_world_pos(self.window_size, self.cursor_pos);
+        }
+
+        self.mouse_right.was_pressed = self.mouse_right.is_pressed;
     }
 
     /// updates `MouseState`.
     pub fn button_pressed(&mut self, button: MouseButton) {
-        if button == MouseButton::Left {
-            self.mouse_left.is_pressed = true;
+        match button {
+            MouseButton::Left => self.mouse_left.is_pressed = true,
+            MouseButton::Right => self.mouse_right.is_pressed = true,
+            _ => (),
         }
     }
 
     /// updates `MouseState`.
     pub fn button_released(&mut self, button: MouseButton) {
-        if button == MouseButton::Left {
-            self.mouse_left.is_pressed = false;
+        match button {
+            MouseButton::Left => self.mouse_left.is_pressed = false,
+            MouseButton::Right => self.mouse_right.is_pressed = false,
+            _ => (),
         }
     }
 
@@ -94,6 +108,7 @@ impl InputHandler {
     pub fn has_triggered(&self, button: MouseButton) -> bool {
         match button {
             MouseButton::Left => self.mouse_left.has_triggered,
+            MouseButton::Right => self.mouse_right.has_triggered,
             _ => false,
         }
     }
@@ -102,6 +117,7 @@ impl InputHandler {
     pub fn get_click_pos(&self, button: MouseButton) -> Option<Pos> {
         match button {
             MouseButton::Left => self.mouse_left.pos,
+            MouseButton::Right => self.mouse_right.pos,
             _ => None,
         }
     }

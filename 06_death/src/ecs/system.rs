@@ -3,9 +3,9 @@ use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
 use anyhow::Context;
 
-use crate::config::{MAX_ENTITIES, RECT_HEIGHT, RECT_WIDTH};
+use crate::config::{RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
-use crate::sprite::{GridPos, Sprite, SpriteData};
+use crate::sprite::SpriteData;
 
 // ------------------------------------------------------------------- create entity system
 
@@ -16,7 +16,7 @@ impl CreateEntitySystem {
         entity_manager: &mut EntityManager,
         components: &mut Components,
         pos: Option<Pos>,
-        sprite: Sprite, // anim_id: AnimationId,
+        anim_id: AnimationId,
     ) -> anyhow::Result<()> {
         let Some(pos) = pos else { return Ok(()) };
 
@@ -38,21 +38,21 @@ impl CreateEntitySystem {
             )
             .context("failed to add size")?;
 
-        components
-            .sprites
-            .insert(entity, sprite)
-            .context("failed to add sprite")?;
         // components
-        //     .animations
-        //     .insert(
-        //         entity,
-        //         AnimationState {
-        //             current_frame: 0,
-        //             elapsed: 0.0,
-        //             id: anim_id.index as u8,
-        //         },
-        //     )
-        //     .context("failed to add animation")?;
+        //     .sprites
+        //     .insert(entity, sprite)
+        //     .context("failed to add sprite")?;
+        components
+            .animations
+            .insert(
+                entity,
+                AnimationState {
+                    current_frame: 0,
+                    elapsed: 0.0,
+                    id: anim_id.index as u8,
+                },
+            )
+            .context("failed to add animation")?;
 
         Ok(())
     }
@@ -65,7 +65,7 @@ impl CreateEntitySystem {
     //     // sprite: Sprite,
     //     anim_id: AnimationId,
     // ) -> anyhow::Result<()> {
-    // use config::MAX_COL;
+    //     use config::MAX_COL;
     //     for _ in 0..MAX_ENTITIES {
     //         let entity = entity_manager.spawn().context("no free slot")?;
     //
@@ -112,6 +112,39 @@ impl CreateEntitySystem {
     // }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct KillEntitySystem;
+
+impl KillEntitySystem {
+    pub fn kill_entity_with_pos(
+        entity_manager: &mut EntityManager,
+        components: &mut Components,
+        click_pos: Option<Pos>,
+    ) -> anyhow::Result<()> {
+        let Some(click_pos) = click_pos else {
+            return Ok(());
+        };
+
+        let targets: Vec<(Entity, Pos, Size)> = components.with_pos_and_size().collect();
+        for (entity, pos, size) in targets.into_iter() {
+            if click_pos.x >= pos.x
+                && pos.x + size.w >= click_pos.x
+                && click_pos.y >= pos.y
+                && pos.y + size.h >= click_pos.y
+            {
+                entity_manager.despawn(entity)?;
+                components.positions.remove(entity)?;
+                components.sizes.remove(entity)?;
+                components.animations.remove(entity)?;
+            } else {
+                continue;
+            };
+        }
+
+        Ok(())
+    }
+}
+
 // ------------------------------------------------------------------- instance update system
 
 #[derive(Debug, Clone, Copy)]
@@ -122,7 +155,7 @@ impl InstanceDataBuildSystem {
         components: &Components,
         registry: &AnimationRegistry,
     ) -> impl Iterator<Item = InstanceData> {
-        (0..MAX_ENTITIES)
+        (0..components.animations.count_alive())
             .filter_map(|id| build_instance_data(Entity::new(id), components, registry))
     }
 }
@@ -136,10 +169,9 @@ pub fn build_instance_data(
     let position = components.positions.get(entity)?;
     let size = components.sizes.get(entity)?;
 
-    // let anim_state = components.animations.get(entity)?;
-    // let g_pos = registry.get_frame(AnimationId::new(anim_state.id), anim_state.current_frame);
-    let sprite = components.sprites.get(entity)?;
-    let sprite_data = sprite.uv_data();
+    let anim_state = components.animations.get(entity)?;
+    let g_pos = registry.get_frame(AnimationId::new(anim_state.id), anim_state.current_frame);
+    let sprite_data = SpriteData::new(g_pos);
 
     Some(InstanceData {
         position: [position.x, position.y],
@@ -159,26 +191,26 @@ impl AnimationSystem {
         dt: f32,
     ) -> anyhow::Result<()> {
         for i in 0..components.positions.count_alive() {
-            // let entity = Entity::new(i);
-            //
-            // let mut state = *components
-            //     .animations
-            //     .get(entity)
-            //     .context("failed to get animation state")?;
-            //
-            // state.elapsed += dt;
-            //
-            // let def = registry.get_def(AnimationId::new(state.id));
-            //
-            // if state.elapsed >= def.duration_per_frame {
-            //     state.elapsed -= def.duration_per_frame;
-            //     state.current_frame = (state.current_frame + 1) % def.frame_count as u8;
-            // }
-            //
-            // *components
-            //     .animations
-            //     .get_mut(entity)
-            //     .context("failed to get mut animation")? = state;
+            let entity = Entity::new(i);
+
+            let mut state = *components
+                .animations
+                .get(entity)
+                .context("animation system: failed to get animation state")?;
+
+            state.elapsed += dt;
+
+            let def = registry.get_def(AnimationId::new(state.id));
+
+            if state.elapsed >= def.duration_per_frame {
+                state.elapsed -= def.duration_per_frame;
+                state.current_frame = (state.current_frame + 1) % def.frame_count as u8;
+            }
+
+            *components
+                .animations
+                .get_mut(entity)
+                .context("animation system: failed to get mut animation")? = state;
         }
         Ok(())
     }

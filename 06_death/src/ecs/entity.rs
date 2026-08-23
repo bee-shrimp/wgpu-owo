@@ -52,12 +52,12 @@ impl EntityManager {
         }
     }
 
-    // /// stores id for reuse
-    // pub fn despawn(&mut self, id: usize) -> anyhow::Result<()> {
-    //     if id >= MAX_ENTITIES {
-    //         anyhow::bail!("invalid entity id");
-    //     }
-    //     self.free_list.push(id);
-    //     Ok(())
-    // }
+    /// stores id for reuse
+    pub fn despawn(&mut self, entity: Entity) -> anyhow::Result<()> {
+        if entity.index >= MAX_ENTITIES {
+            anyhow::bail!("invalid entity id");
+        }
+        self.free_list.push(entity.index);
+        Ok(())
+    }
 }

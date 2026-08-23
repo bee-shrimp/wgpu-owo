@@ -5,4 +5,4 @@ mod component;
 pub use component::{ComponentStorage, Components, Pos, Size};
 
 mod system;
-pub use system::{AnimationSystem, CreateEntitySystem, InstanceDataBuildSystem};
+pub use system::{AnimationSystem, CreateEntitySystem, InstanceDataBuildSystem, KillEntitySystem};

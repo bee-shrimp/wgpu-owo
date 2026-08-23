@@ -32,7 +32,7 @@ fn vs_main(
 
     out.position = uniforms.projection_matrix * uniforms.view_matrix * vec4<f32>(pos, 0.0, 1.0);
 
-    out.uv = in.sprite_offset + in.v_pos * in.sprite_size;
+    out.uv = in.sprite_offset + in.uv * in.sprite_size;
     return out;
 }
 @fragment

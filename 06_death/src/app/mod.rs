@@ -181,16 +181,22 @@ impl ApplicationHandler for App {
 
         self.input.update_mouse_state();
 
-        if !self.input.has_triggered(MouseButton::Left) {
-            return;
-        }
-
         // -------------------------------------------------------- update world if clicked
 
-        let click_pos = self.input.get_click_pos(MouseButton::Left);
+        let left_click_pos = if self.input.has_triggered(MouseButton::Left) {
+            self.input.get_click_pos(MouseButton::Left)
+        } else {
+            None
+        };
+
+        let right_click_pos = if self.input.has_triggered(MouseButton::Right) {
+            self.input.get_click_pos(MouseButton::Right)
+        } else {
+            None
+        };
 
         self.world
-            .update(click_pos, dt)
+            .update(left_click_pos, right_click_pos, dt)
             .expect("failed to update world");
 
         // -------------------------------------------------------- update

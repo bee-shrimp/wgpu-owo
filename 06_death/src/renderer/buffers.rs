@@ -3,7 +3,7 @@
 use std::mem;
 use wgpu::util::DeviceExt;
 
-use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH};
+use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH};
 use glam::{Mat4, Vec3, camera};
 
 // ---------------------------------------------------------------- struct for uniform buffer
@@ -65,15 +65,15 @@ pub const RECT_VERTICES: &[Vertex] = &[
         uv: [0.0, 0.0], // top left
     },
     Vertex {
-        position: [0.0, RECT_HEIGHT as f32],
+        position: [0.0, 1.0],
         uv: [0.0, 1.0], // bottom left
     },
     Vertex {
-        position: [RECT_WIDTH as f32, 0.0],
+        position: [1.0, 0.0],
         uv: [1.0, 0.0], // top right
     },
     Vertex {
-        position: [RECT_WIDTH as f32, RECT_HEIGHT as f32],
+        position: [1.0, 1.0],
         uv: [1.0, 1.0], // bottom right
     },
 ];

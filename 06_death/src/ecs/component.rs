@@ -3,7 +3,6 @@
 use crate::animation::AnimationState;
 use crate::config::MAX_ENTITIES;
 use crate::ecs::entity::Entity;
-use crate::sprite::{Sprite, SpriteData};
 
 // ---------------------------------------------------------------- struct for rects
 
@@ -24,8 +23,20 @@ pub struct Size {
 pub struct Components {
     pub positions: ComponentStorage<Pos>,
     pub sizes: ComponentStorage<Size>,
-    // pub animations: ComponentStorage<AnimationState>,
-    pub sprites: ComponentStorage<Sprite>,
+    pub animations: ComponentStorage<AnimationState>,
+}
+impl Components {
+    pub fn with_pos_and_size(&self) -> impl Iterator<Item = (Entity, Pos, Size)> {
+        (0..MAX_ENTITIES)
+            .filter(move |&i| self.positions.alive[i])
+            .map(move |i| {
+                (
+                    Entity::new(i),
+                    self.positions.components[i],
+                    self.sizes.components[i],
+                )
+            })
+    }
 }
 
 // ---------------------------------------------------------------- component srorage
@@ -69,15 +80,14 @@ impl<T: Default> ComponentStorage<T> {
         Some(&mut self.components[entity.index])
     }
 
-    // /// removes T from components array and kill entity(set alive == false).
-    // pub fn remove(&mut self, entity: Entity) -> anyhow::Result<()> {
-    //     if entity.index >= MAX_ENTITIES || !self.alive[entity.index] {
-    //         anyhow::bail!("entity not found");
-    //     }
-    //     self.alive[entity.index] = false;
-    //     Ok(())
-    // }
-    //
+    /// removes T from components array and kill entity(set alive == false).
+    pub fn remove(&mut self, entity: Entity) -> anyhow::Result<()> {
+        if entity.index >= MAX_ENTITIES || !self.alive[entity.index] {
+            anyhow::bail!("entity not found");
+        }
+        self.alive[entity.index] = false;
+        Ok(())
+    }
 
     // /// returns iterator (Entity, &T).
     // pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {

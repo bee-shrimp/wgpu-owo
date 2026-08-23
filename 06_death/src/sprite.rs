@@ -4,19 +4,19 @@ use crate::config::{SPRITE_GRID_SIZE, SPRITE_SHEET_SIZE};
 use crate::ecs::Size;
 
 // ---------------------------------------------------------------- enum of sprites
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum Sprite {
-    #[default]
-    Walk,
-}
-
-impl Sprite {
-    pub fn uv_data(&self) -> SpriteData {
-        match self {
-            Self::Walk => SpriteData::new(GridPos { gx: 0, gy: 0 }),
-        }
-    }
-}
+// #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash)]
+// pub enum Sprite {
+//     #[default]
+//     Walk,
+// }
+//
+// impl Sprite {
+//     pub fn uv_data(&self) -> SpriteData {
+//         match self {
+//             Self::Walk => SpriteData::new(GridPos { gx: 0, gy: 0 }),
+//         }
+//     }
+// }
 
 // ------------------------------------------------------------------- structs for SpriteData
 

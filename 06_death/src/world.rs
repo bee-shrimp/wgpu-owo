@@ -7,10 +7,9 @@ use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, MAX_ENTITIES, RECT_HEIGHT, RECT_W
 use crate::animation::{AnimationId, AnimationRegistry, init_animation_registry};
 use crate::ecs::{
     AnimationSystem, ComponentStorage, Components, CreateEntitySystem, EntityManager,
-    InstanceDataBuildSystem, Pos,
+    InstanceDataBuildSystem, KillEntitySystem, Pos,
 };
 use crate::renderer::InstanceData;
-use crate::sprite::Sprite;
 
 // ---------------------------------------------------------------- world struct
 
@@ -32,8 +31,7 @@ impl Default for World {
             components: Components {
                 positions: ComponentStorage::new(),
                 sizes: ComponentStorage::new(),
-                sprites: ComponentStorage::new(),
-                // animations: ComponentStorage::new(),
+                animations: ComponentStorage::new(),
             },
             instances: Vec::with_capacity(MAX_ENTITIES),
             anim_registry: AnimationRegistry::new(),
@@ -45,7 +43,7 @@ impl Default for World {
 impl World {
     /// initialises world with entities.
     pub fn init(&mut self) -> anyhow::Result<()> {
-        // init_animation_registry(&mut self.anim_registry)?;
+        init_animation_registry(&mut self.anim_registry)?;
         let center = Pos {
             x: (LOGIC_WIDTH / 2 - RECT_WIDTH / 2) as f32,
             y: (LOGIC_HEIGHT / 2 - RECT_HEIGHT / 2) as f32,
@@ -55,7 +53,7 @@ impl World {
             &mut self.entity_manager,
             &mut self.components,
             Some(center),
-            Sprite::Walk,
+            AnimationId::new(0),
         )
         .context("failed to create entity")?;
 
@@ -64,16 +62,27 @@ impl World {
     }
 
     /// updates components.
-    pub fn update(&mut self, click_pos: Option<Pos>, dt: f32) -> anyhow::Result<()> {
-        // AnimationSystem::update(&mut self.components, &self.anim_registry, dt)?;
+    pub fn update(
+        &mut self,
+        left_click_pos: Option<Pos>,
+        right_click_pos: Option<Pos>,
+        dt: f32,
+    ) -> anyhow::Result<()> {
+        AnimationSystem::update(&mut self.components, &self.anim_registry, dt)?;
 
         CreateEntitySystem::create_entity_with_pos(
             &mut self.entity_manager,
             &mut self.components,
-            click_pos,
-            Sprite::Walk,
+            left_click_pos,
+            AnimationId::new(0),
         )
         .context("failed to create entity")?;
+
+        KillEntitySystem::kill_entity_with_pos(
+            &mut self.entity_manager,
+            &mut self.components,
+            right_click_pos,
+        )?;
 
         self.update_instances();
 
