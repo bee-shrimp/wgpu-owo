@@ -187,7 +187,7 @@ impl ApplicationHandler for App {
 
         self.input.update_for_next_frame();
 
-        // -------------------------------------------------------- play sound.
+        // -------------------------------------------------------- sound for world.
 
         let sound = self.sound.as_ref().expect("failed to find sound player");
 
