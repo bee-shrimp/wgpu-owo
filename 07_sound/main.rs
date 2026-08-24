@@ -16,6 +16,7 @@ mod sprite;
 mod world;
 
 mod animation;
+mod sound;
 
 // ---------------------------------------------------------------- main
 

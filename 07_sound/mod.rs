@@ -19,11 +19,14 @@ use crate::ecs::{Pos, Size};
 pub mod input;
 use input::InputHandler;
 
+use crate::sound::SoundPlayer;
+
 // ---------------------------------------------------------------- App struct
 
 #[derive(Default)]
 pub struct App {
     renderer: Option<Renderer>,
+    sound: Option<SoundPlayer>,
     world: World,
     input: InputHandler,
     last_frame_time: Option<Instant>,
@@ -32,7 +35,6 @@ pub struct App {
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         // -------------------------------------------------------- create window object
-
         let window = Arc::new(
             event_loop
                 .create_window(Window::default_attributes())
@@ -70,6 +72,7 @@ impl ApplicationHandler for App {
             .update(instances);
 
         // -------------------------------------------------------- init other fields
+        self.sound = Some(SoundPlayer::new().expect("failed to create sound player"));
 
         self.last_frame_time = Some(Instant::now());
     }
@@ -184,10 +187,14 @@ impl ApplicationHandler for App {
 
         self.input.update_for_next_frame();
 
+        // -------------------------------------------------------- play sound.
+
+        let sound = self.sound.as_ref().expect("failed to find sound player");
+
         // -------------------------------------------------------- update world.
 
         self.world
-            .update(input_state, dt)
+            .update(&input_state, sound, dt)
             .expect("failed to update world");
 
         // -------------------------------------------------------- update renderer.

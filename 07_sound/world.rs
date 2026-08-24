@@ -8,6 +8,7 @@ use crate::ecs::{ComponentStorage, Components, Entity, EntityManager, Systems};
 use crate::renderer::InstanceData;
 
 use crate::app::input::InputState;
+use crate::sound::SoundPlayer;
 
 pub struct WorldData {
     pub entity_manager: EntityManager,
@@ -62,8 +63,13 @@ impl World {
     }
 
     /// updates components.
-    pub fn update(&mut self, input: InputState, dt: f32) -> anyhow::Result<()> {
-        self.systems.update(&mut self.data, &input, dt)?;
+    pub fn update(
+        &mut self,
+        input: &InputState,
+        sound: &SoundPlayer,
+        dt: f32,
+    ) -> anyhow::Result<()> {
+        self.systems.update(&mut self.data, &input, sound, dt)?;
 
         // self.update_instances();
 
