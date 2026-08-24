@@ -1,3 +1,5 @@
+// ---------------------------------------------------------------- imports
+
 use crate::animation::{AnimationId, AnimationRegistry, AnimationState};
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
@@ -7,7 +9,7 @@ use crate::config::{RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
 use crate::sprite::SpriteData;
 
-// ------------------------------------------------------------------- create entity system
+// ---------------------------------------------------------------- create entity system
 
 pub struct CreateEntitySystem;
 
@@ -38,10 +40,6 @@ impl CreateEntitySystem {
             )
             .context("failed to add size")?;
 
-        // components
-        //     .sprites
-        //     .insert(entity, sprite)
-        //     .context("failed to add sprite")?;
         components
             .animations
             .insert(
@@ -119,14 +117,25 @@ impl KillEntitySystem {
     pub fn kill_entity_with_pos(
         entity_manager: &mut EntityManager,
         components: &mut Components,
+        entities_with_pos_and_size: &[Entity],
         click_pos: Option<Pos>,
     ) -> anyhow::Result<()> {
         let Some(click_pos) = click_pos else {
             return Ok(());
         };
 
-        let targets: Vec<(Entity, Pos, Size)> = components.with_pos_and_size().collect();
-        for (entity, pos, size) in targets.into_iter() {
+        for entity in entities_with_pos_and_size {
+            let entity = *entity;
+
+            let pos = components
+                .positions
+                .get(entity)
+                .context("kill entity system: failed to get pos")?;
+            let size = components
+                .sizes
+                .get(entity)
+                .context("kill entity system: failed to get pos")?;
+
             if click_pos.x >= pos.x
                 && pos.x + size.w >= click_pos.x
                 && click_pos.y >= pos.y
@@ -136,16 +145,14 @@ impl KillEntitySystem {
                 components.positions.remove(entity)?;
                 components.sizes.remove(entity)?;
                 components.animations.remove(entity)?;
-            } else {
-                continue;
-            };
+            }
         }
 
         Ok(())
     }
 }
 
-// ------------------------------------------------------------------- instance update system
+// ---------------------------------------------------------------- instance update system
 
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
@@ -154,9 +161,11 @@ impl InstanceDataBuildSystem {
     pub fn update(
         components: &Components,
         registry: &AnimationRegistry,
+        alive_entities: &[Entity],
     ) -> impl Iterator<Item = InstanceData> {
-        (0..components.animations.count_alive())
-            .filter_map(|id| build_instance_data(Entity::new(id), components, registry))
+        alive_entities
+            .iter()
+            .filter_map(|entity| build_instance_data(*entity, components, registry))
     }
 }
 
@@ -181,21 +190,20 @@ pub fn build_instance_data(
     })
 }
 
-// ------------------------------------------------------------------- animation system
+// ---------------------------------------------------------------- animation system
 
 pub struct AnimationSystem;
 impl AnimationSystem {
     pub fn update(
         components: &mut Components,
         registry: &AnimationRegistry,
+        entities_with_animation_state: &[Entity],
         dt: f32,
     ) -> anyhow::Result<()> {
-        for i in 0..components.positions.count_alive() {
-            let entity = Entity::new(i);
-
+        for entity in entities_with_animation_state {
             let mut state = *components
                 .animations
-                .get(entity)
+                .get(*entity)
                 .context("animation system: failed to get animation state")?;
 
             state.elapsed += dt;
@@ -209,14 +217,14 @@ impl AnimationSystem {
 
             *components
                 .animations
-                .get_mut(entity)
+                .get_mut(*entity)
                 .context("animation system: failed to get mut animation")? = state;
         }
         Ok(())
     }
 }
 
-// ------------------------------------------------------------------- toggle sprite system
+// ---------------------------------------------------------------- toggle sprite system
 
 // pub struct ToggleSpriteSystem;
 //

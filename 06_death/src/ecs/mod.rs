@@ -1,5 +1,5 @@
 mod entity;
-pub use entity::EntityManager;
+pub use entity::{Entity, EntityManager};
 
 mod component;
 pub use component::{ComponentStorage, Components, Pos, Size};

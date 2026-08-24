@@ -18,14 +18,14 @@ pub fn create_diffuse_texture(
     label: &str,
     diffuse_bytes: &[u8],
 ) -> anyhow::Result<wgpu::TextureView> {
-    // --------------------------------------------------------------- image data
+    // ------------------------------------------------------------ image data
 
     let image = image::load_from_memory(diffuse_bytes).context("failed to load image")?;
 
     let diffuse_rgba = image.to_rgba8();
     let dimensions = image.dimensions();
 
-    // --------------------------------------------------------------- create texture
+    // ------------------------------------------------------------ create texture
 
     let diffuse_texture_size = wgpu::Extent3d {
         width: dimensions.0,
@@ -44,7 +44,7 @@ pub fn create_diffuse_texture(
         view_formats: &[],
     });
 
-    // --------------------------------------------------------------- write texture
+    // ------------------------------------------------------------ write texture
 
     queue.write_texture(
         wgpu::TexelCopyTextureInfo {
@@ -62,7 +62,7 @@ pub fn create_diffuse_texture(
         diffuse_texture_size,
     );
 
-    // --------------------------------------------------------------- texture view
+    // ------------------------------------------------------------ texture view
 
     Ok(diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default()))
 }
@@ -89,7 +89,7 @@ pub fn create_texture(device: &wgpu::Device, label: &str, size: &TextureSize) ->
         view_formats: &[],
     });
 
-    // --------------------------------------------------------------- texture view
+    // ------------------------------------------------------------ texture view
 
     new_texture.create_view(&wgpu::TextureViewDescriptor::default())
 }

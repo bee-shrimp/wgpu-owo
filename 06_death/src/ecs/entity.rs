@@ -24,10 +24,10 @@ pub struct EntityManager {
 
 impl EntityManager {
     /// creates new entity manager struct
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             next_id: 0,
-            free_list: Vec::new(),
+            free_list: Vec::with_capacity(MAX_ENTITIES),
         }
     }
 

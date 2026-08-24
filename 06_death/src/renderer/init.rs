@@ -17,11 +17,11 @@ pub async fn init_wgpu(
     wgpu::Surface<'static>,
     wgpu::SurfaceConfiguration,
 )> {
-    // ----------------------------------------------------------- size of window
+    // ------------------------------------------------------------ size of window
 
     let size = window.inner_size();
 
-    // ----------------------------------------------------------- create a new wgpu instance
+    // ------------------------------------------------------------ create a new wgpu instance
 
     let wgpu_instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::GL,
@@ -31,7 +31,7 @@ pub async fn init_wgpu(
         display: Some(Box::new(event_loop.owned_display_handle())),
     });
 
-    // ----------------------------------------------------------- physical device
+    // ------------------------------------------------------------ physical device
 
     let adapter = wgpu_instance
         .request_adapter(&wgpu::RequestAdapterOptions {
@@ -43,14 +43,14 @@ pub async fn init_wgpu(
         .await
         .context("failed to request adapter")?;
 
-    // ----------------------------------------------------------- logical device
+    // ------------------------------------------------------------ logical device
 
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor::default())
         .await
         .context("failed to create device")?;
 
-    // ----------------------------------------------------------- surface to draw onto
+    // ------------------------------------------------------------ surface to draw onto
 
     let surface = wgpu_instance
         .create_surface(window.clone())

@@ -6,7 +6,7 @@ use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, MAX_ENTITIES, RECT_HEIGHT, RECT_W
 
 use crate::animation::{AnimationId, AnimationRegistry, init_animation_registry};
 use crate::ecs::{
-    AnimationSystem, ComponentStorage, Components, CreateEntitySystem, EntityManager,
+    AnimationSystem, ComponentStorage, Components, CreateEntitySystem, Entity, EntityManager,
     InstanceDataBuildSystem, KillEntitySystem, Pos,
 };
 use crate::renderer::InstanceData;
@@ -16,6 +16,7 @@ use crate::renderer::InstanceData;
 pub struct World {
     entity_manager: EntityManager,
     pub components: Components,
+    update_targets: Vec<Entity>,
     instances: Vec<InstanceData>,
     anim_registry: AnimationRegistry,
     is_running: bool,
@@ -33,6 +34,7 @@ impl Default for World {
                 sizes: ComponentStorage::new(),
                 animations: ComponentStorage::new(),
             },
+            update_targets: Vec::with_capacity(MAX_ENTITIES),
             instances: Vec::with_capacity(MAX_ENTITIES),
             anim_registry: AnimationRegistry::new(),
             is_running: true,
@@ -45,8 +47,8 @@ impl World {
     pub fn init(&mut self) -> anyhow::Result<()> {
         init_animation_registry(&mut self.anim_registry)?;
         let center = Pos {
-            x: (LOGIC_WIDTH / 2 - RECT_WIDTH / 2) as f32,
-            y: (LOGIC_HEIGHT / 2 - RECT_HEIGHT / 2) as f32,
+            x: f32::from(LOGIC_WIDTH / 2 - RECT_WIDTH / 2),
+            y: f32::from(LOGIC_HEIGHT / 2 - RECT_HEIGHT / 2),
         };
 
         CreateEntitySystem::create_entity_with_pos(
@@ -68,7 +70,16 @@ impl World {
         right_click_pos: Option<Pos>,
         dt: f32,
     ) -> anyhow::Result<()> {
-        AnimationSystem::update(&mut self.components, &self.anim_registry, dt)?;
+        self.update_targets.truncate(0);
+        self.update_targets
+            .extend(self.components.with_animation_state());
+
+        AnimationSystem::update(
+            &mut self.components,
+            &self.anim_registry,
+            &self.update_targets,
+            dt,
+        )?;
 
         CreateEntitySystem::create_entity_with_pos(
             &mut self.entity_manager,
@@ -78,26 +89,33 @@ impl World {
         )
         .context("failed to create entity")?;
 
+        self.update_targets.truncate(0);
+        self.update_targets
+            .extend(self.components.with_pos_and_size());
+
         KillEntitySystem::kill_entity_with_pos(
             &mut self.entity_manager,
             &mut self.components,
+            &self.update_targets,
             right_click_pos,
         )?;
 
         self.update_instances();
 
-        println!("{:?}", self.components.positions.count_alive());
-        println!("{:?}", self.instances);
         Ok(())
     }
 
     /// updates instance data.
     pub fn update_instances(&mut self) {
-        self.instances.clear();
+        self.instances.truncate(0);
+
+        self.update_targets.truncate(0);
+        self.update_targets.extend(self.components.iter_alive());
 
         self.instances.extend(InstanceDataBuildSystem::update(
             &self.components,
             &self.anim_registry,
+            &self.update_targets,
         ));
     }
 

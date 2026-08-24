@@ -130,7 +130,7 @@ pub fn create_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
     })
 }
 
-// --------------------------------------------------------------- full screen vertex buffer
+// ---------------------------------------------------------------- full screen vertex buffer
 
 pub fn create_vertex_buffer(
     device: &wgpu::Device,
@@ -144,7 +144,7 @@ pub fn create_vertex_buffer(
     })
 }
 
-// --------------------------------------------------------------- instance buffer
+// ---------------------------------------------------------------- instance buffer
 
 pub fn create_instance_buffer(device: &wgpu::Device, instances: &[InstanceData]) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -154,7 +154,7 @@ pub fn create_instance_buffer(device: &wgpu::Device, instances: &[InstanceData])
     })
 }
 
-// --------------------------------------------------------------- index buffer
+// ---------------------------------------------------------------- index buffer
 
 pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
 use crate::config::{SPRITE_GRID_SIZE, SPRITE_SHEET_SIZE};
 use crate::ecs::Size;
@@ -18,7 +18,7 @@ use crate::ecs::Size;
 //     }
 // }
 
-// ------------------------------------------------------------------- structs for SpriteData
+// ---------------------------------------------------------------- structs for SpriteData
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct UVOffset {
@@ -32,7 +32,7 @@ pub struct GridPos {
     pub gy: u8,
 }
 
-// ------------------------------------------------------------------- SpriteData struct
+// ---------------------------------------------------------------- SpriteData struct
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SpriteData {
@@ -40,7 +40,7 @@ pub struct SpriteData {
     pub uv_size: Size,
 }
 
-// ------------------------------------------------------------------- SpriteData methods
+// ---------------------------------------------------------------- SpriteData methods
 
 impl SpriteData {
     pub fn new(g_pos: GridPos) -> Self {

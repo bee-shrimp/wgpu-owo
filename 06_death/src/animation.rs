@@ -1,3 +1,5 @@
+// ---------------------------------------------------------------- imports
+
 use anyhow::Context;
 
 use crate::sprite::GridPos;
@@ -126,9 +128,8 @@ impl AnimationRegistry {
             .allocate(frames.len())
             .context("failed to allocate in frame storage")?;
 
-        for i in 0..frames.len() {
-            self.frame_storage.frames[offset + i] = frames[i];
-        }
+        self.frame_storage.frames[offset..(frames.len() + offset)].copy_from_slice(frames);
+
         let anim_id = AnimationId {
             index: self.anim_count,
         };

@@ -28,7 +28,7 @@ pub fn draw_mid_renderpass(
 
     num_instances: u32,
 ) {
-    // ----------------------------------------------------------- mid renderpass
+    // ------------------------------------------------------------ mid renderpass
 
     let mut mid_renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
@@ -54,7 +54,7 @@ pub fn draw_mid_renderpass(
 
     let num_indices = buffers::RECT_INDICES.len() as u32;
 
-    // ----------------------------------------------------------- use the renderpass
+    // ------------------------------------------------------------ use the renderpass
 
     mid_renderpass.set_pipeline(mid_render_pipeline);
     mid_renderpass.set_bind_group(0, Some(mid_bind_group), &[]);
@@ -63,7 +63,7 @@ pub fn draw_mid_renderpass(
     mid_renderpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
     mid_renderpass.draw_indexed(0..num_indices, 0, 0..num_instances);
 
-    // ----------------------------------------------------------- end the renderpass
+    // ------------------------------------------------------------ end the renderpass
 
     drop(mid_renderpass);
 }
@@ -80,7 +80,7 @@ pub fn draw_scaler_renderpass(
 
     window_size: Size,
 ) {
-    // ----------------------------------------------------------- surface renderpass
+    // ------------------------------------------------------------ surface renderpass
 
     let mut scaler_renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("scaler renderpass"),
@@ -101,7 +101,7 @@ pub fn draw_scaler_renderpass(
 
     let viewport_data = calc_ratio(window_size.w, window_size.h);
 
-    // ----------------------------------------------------------- use the renderpass
+    // ------------------------------------------------------------ use the renderpass
 
     scaler_renderpass.set_pipeline(scaler_render_pipeline);
     scaler_renderpass.set_bind_group(0, Some(scaler_bind_group), &[]);
@@ -116,12 +116,12 @@ pub fn draw_scaler_renderpass(
     );
     scaler_renderpass.draw(0..3, 0..1);
 
-    // ----------------------------------------------------------- end the renderpass
+    // ------------------------------------------------------------ end the renderpass
 
     drop(scaler_renderpass);
 }
 
-// --------------------------------------------------------------- calculate viewport data for scaler
+// ---------------------------------------------------------------- calculate viewport data for scaler
 
 fn calc_ratio(surface_w: f32, surface_h: f32) -> ViewportData {
     let w = f32::from(LOGIC_WIDTH);

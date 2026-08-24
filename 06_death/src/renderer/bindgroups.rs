@@ -23,7 +23,7 @@ use crate::renderer::buffers::Uniforms;
 // }
 
 pub fn create_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-    // ----------------------------------------------------------- bind group w/ texture and sampler
+    // ------------------------------------------------------------ bind group w/ texture and sampler
 
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("bind group layout with texture and sampler"),
@@ -49,7 +49,7 @@ pub fn create_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLay
 }
 
 pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-    // ----------------------------------------------------------- bind group w/ uniform, texture, sampler
+    // ------------------------------------------------------------ bind group w/ uniform, texture, sampler
 
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("bind group layout with uniform, texture, and sampler"),

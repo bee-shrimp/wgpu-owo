@@ -26,16 +26,23 @@ pub struct Components {
     pub animations: ComponentStorage<AnimationState>,
 }
 impl Components {
-    pub fn with_pos_and_size(&self) -> impl Iterator<Item = (Entity, Pos, Size)> {
+    pub fn iter_alive(&self) -> impl Iterator<Item = Entity> {
         (0..MAX_ENTITIES)
             .filter(move |&i| self.positions.alive[i])
-            .map(move |i| {
-                (
-                    Entity::new(i),
-                    self.positions.components[i],
-                    self.sizes.components[i],
-                )
-            })
+            .map(Entity::new)
+    }
+
+    pub fn with_pos_and_size(&self) -> impl Iterator<Item = Entity> {
+        (0..MAX_ENTITIES)
+            .filter(move |&i| self.positions.alive[i])
+            .filter(move |&i| self.sizes.alive[i])
+            .map(Entity::new)
+    }
+
+    pub fn with_animation_state(&self) -> impl Iterator<Item = Entity> {
+        (0..MAX_ENTITIES)
+            .filter(move |&i| self.animations.alive[i])
+            .map(Entity::new)
     }
 }
 
@@ -100,8 +107,8 @@ impl<T: Default> ComponentStorage<T> {
     //     })
     // }
     //
-    /// returns how many entities are alive.
-    pub fn count_alive(&self) -> usize {
-        self.alive.iter().filter(|&&a| a).count()
-    }
+    // /// returns how many entities are alive. mainly for debug.
+    // pub fn count_alive(&self) -> usize {
+    //     self.alive.iter().filter(|&&a| a).count()
+    // }
 }
