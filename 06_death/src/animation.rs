@@ -58,14 +58,14 @@ pub struct AnimationState {
 
 /// static data of frames.
 #[derive(Debug, Clone, Copy)]
-struct FrameSrorage {
+struct FrameStorage {
     /// flat array of all frames.
     frames: [GridPos; MAX_TOTAL_FRAMES],
     /// number of already registered frames.
     count: usize,
 }
 
-impl FrameSrorage {
+impl FrameStorage {
     pub const fn new() -> Self {
         Self {
             frames: [GridPos { gx: 0, gy: 0 }; MAX_TOTAL_FRAMES],
@@ -106,7 +106,7 @@ pub struct AnimationRegistry {
     /// number of already registered animation definitions.
     anim_count: usize,
     /// frame data storage.
-    frame_storage: FrameSrorage,
+    frame_storage: FrameStorage,
 }
 
 impl AnimationRegistry {
@@ -118,7 +118,7 @@ impl AnimationRegistry {
                 duration_per_frame: 0.0,
             }; MAX_ANIMATIONS],
             anim_count: 0,
-            frame_storage: FrameSrorage::new(),
+            frame_storage: FrameStorage::new(),
         }
     }
 

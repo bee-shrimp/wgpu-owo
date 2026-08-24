@@ -1,12 +1,13 @@
 // ---------------------------------------------------------------- imports
+use anyhow::Context;
 
-use crate::animation::{AnimationId, AnimationRegistry, AnimationState};
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
-use anyhow::Context;
 
 use crate::config::{RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
+
+use crate::animation::{AnimationId, AnimationRegistry, AnimationState};
 use crate::sprite::SpriteData;
 
 // ---------------------------------------------------------------- create entity system
@@ -20,37 +21,32 @@ impl CreateEntitySystem {
         pos: Option<Pos>,
         anim_id: AnimationId,
     ) -> anyhow::Result<()> {
-        let Some(pos) = pos else { return Ok(()) };
+        let Some(pos) = pos else {
+            return Ok(());
+        };
 
-        let entity = entity_manager.spawn().context("no free slot")?;
+        let Some(entity) = entity_manager.spawn() else {
+            return Ok(());
+        };
 
-        components
-            .positions
-            .insert(entity, pos)
-            .context("failed to add position")?;
+        components.positions.insert(entity, pos)?;
 
-        components
-            .sizes
-            .insert(
-                entity,
-                Size {
-                    w: f32::from(RECT_WIDTH),
-                    h: f32::from(RECT_HEIGHT),
-                },
-            )
-            .context("failed to add size")?;
+        components.sizes.insert(
+            entity,
+            Size {
+                w: f32::from(RECT_WIDTH),
+                h: f32::from(RECT_HEIGHT),
+            },
+        )?;
 
-        components
-            .animations
-            .insert(
-                entity,
-                AnimationState {
-                    current_frame: 0,
-                    elapsed: 0.0,
-                    id: anim_id.index as u8,
-                },
-            )
-            .context("failed to add animation")?;
+        components.animations.insert(
+            entity,
+            AnimationState {
+                current_frame: 0,
+                elapsed: 0.0,
+                id: anim_id.index as u8,
+            },
+        )?;
 
         Ok(())
     }

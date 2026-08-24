@@ -46,7 +46,7 @@ impl Components {
     }
 }
 
-// ---------------------------------------------------------------- component srorage
+// ---------------------------------------------------------------- component storage
 
 pub struct ComponentStorage<T> {
     components: [T; MAX_ENTITIES],

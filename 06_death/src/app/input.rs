@@ -1,6 +1,5 @@
-// ------------------------------------------------------------------- imports
+// ---------------------------------------------------------------- imports
 
-use std::collections::HashSet;
 use winit::{event::MouseButton, keyboard::KeyCode};
 
 use crate::{
@@ -8,25 +7,32 @@ use crate::{
     ecs::{Pos, Size},
 };
 
-// ------------------------------------------------------------------- mouse state
+const KEY_COUNT: usize = 255;
+const MOUSE_BUTTONS: usize = 3;
 
-#[derive(Default)]
-struct MouseState {
-    is_pressed: bool,
-    was_pressed: bool,
-    has_triggered: bool,
-    pos: Option<Pos>,
-}
+// ---------------------------------------------------------------- input handler
 
-// ------------------------------------------------------------------- input handler
-
-#[derive(Default)]
 pub struct InputHandler {
-    pressed_keys: HashSet<KeyCode>,
-    mouse_left: MouseState,
-    mouse_right: MouseState,
-    cursor_pos: Pos,
+    now_keys: [bool; KEY_COUNT],
+    // prev_keys: [bool; KEY_COUNT],
+    now_mouse: [bool; MOUSE_BUTTONS],
+    prev_mouse: [bool; MOUSE_BUTTONS],
+    now_cursor_pos: Pos,
     window_size: Size,
+}
+impl Default for InputHandler {
+    fn default() -> Self {
+        Self {
+            now_keys: [false; KEY_COUNT],
+            // prev_keys: [false; KEY_COUNT],
+            now_mouse: [false; MOUSE_BUTTONS],
+            prev_mouse: [false; MOUSE_BUTTONS],
+
+            now_cursor_pos: Pos::default(),
+
+            window_size: Size::default(),
+        }
+    }
 }
 
 // ---------------------------------------------------------------- take input from app
@@ -35,11 +41,8 @@ impl InputHandler {
     /// creates new `InputHandler`.
     pub fn new(window_size: Size) -> Self {
         Self {
-            pressed_keys: HashSet::new(),
-            mouse_left: MouseState::default(),
-            mouse_right: MouseState::default(),
-            cursor_pos: Pos::default(),
             window_size,
+            ..Default::default()
         }
     }
 
@@ -50,75 +53,73 @@ impl InputHandler {
 
     /// adds keycode to `InputHandler.pressed_keys`.
     pub fn insert_key(&mut self, code: KeyCode) {
-        self.pressed_keys.insert(code);
+        self.now_keys[code as usize] = true;
     }
 
     /// removes keycode from `InputHandler.pressed_keys`.
     pub fn remove_key(&mut self, code: KeyCode) {
-        self.pressed_keys.remove(&code);
+        self.now_keys[code as usize] = false;
     }
 
     /// returns if the keycode is in `InputHandler.pressed_keys`.
     pub fn has_key(&self, code: KeyCode) -> bool {
-        self.pressed_keys.contains(&code)
+        self.now_keys[code as usize]
     }
 
     /// updates `InputHandler.cursor_pos`.
     pub fn update_cursor_pos(&mut self, pos: Pos) {
-        self.cursor_pos = pos;
+        self.now_cursor_pos = pos;
     }
 
-    /// detects if mouse has been clicked.
-    pub fn update_mouse_state(&mut self) {
-        self.mouse_left.has_triggered = !self.mouse_left.was_pressed && self.mouse_left.is_pressed;
-        if self.mouse_left.has_triggered {
-            self.mouse_left.pos = cursor_pos_to_world_pos(self.window_size, self.cursor_pos);
+    // /// detects if mouse has been clicked.
+    // pub fn update_mouse_state(&mut self) {
+    //     if self.has_triggered(MouseButton::Left) {
+    //         self.mouse_left.pos = cursor_pos_to_world_pos(self.window_size, self.cursor_pos);
+    //     }
+    //
+    //     self.mouse_left.was_pressed = self.mouse_left.is_pressed;
+    //
+    // }
+
+    fn mouse_button_to_usize(&self, button: MouseButton) -> usize {
+        match button {
+            MouseButton::Left => 0,
+            MouseButton::Right => 1,
+            MouseButton::Middle => 2,
+            _ => 3,
         }
-
-        self.mouse_left.was_pressed = self.mouse_left.is_pressed;
-
-        self.mouse_right.has_triggered =
-            !self.mouse_right.was_pressed && self.mouse_right.is_pressed;
-        if self.mouse_right.has_triggered {
-            self.mouse_right.pos = cursor_pos_to_world_pos(self.window_size, self.cursor_pos);
-        }
-
-        self.mouse_right.was_pressed = self.mouse_right.is_pressed;
     }
 
     /// updates `MouseState`.
     pub fn button_pressed(&mut self, button: MouseButton) {
-        match button {
-            MouseButton::Left => self.mouse_left.is_pressed = true,
-            MouseButton::Right => self.mouse_right.is_pressed = true,
-            _ => (),
-        }
+        let idx = self.mouse_button_to_usize(button);
+        self.now_mouse[idx] = true;
     }
 
     /// updates `MouseState`.
     pub fn button_released(&mut self, button: MouseButton) {
-        match button {
-            MouseButton::Left => self.mouse_left.is_pressed = false,
-            MouseButton::Right => self.mouse_right.is_pressed = false,
-            _ => (),
-        }
+        let idx = self.mouse_button_to_usize(button);
+        self.now_mouse[idx] = false;
+    }
+
+    pub fn update_for_next_frame(&mut self) {
+        // self.prev_keys.copy_from_slice(&self.now_keys);
+        self.prev_mouse.copy_from_slice(&self.now_mouse);
+        // self.prev_cursor_pos = self.now_cursor_pos;
     }
 
     // /// returns if mouse was clicked.
     pub fn has_triggered(&self, button: MouseButton) -> bool {
-        match button {
-            MouseButton::Left => self.mouse_left.has_triggered,
-            MouseButton::Right => self.mouse_right.has_triggered,
-            _ => false,
-        }
+        self.now_mouse[self.mouse_button_to_usize(button)]
+            && !self.prev_mouse[self.mouse_button_to_usize(button)]
     }
 
     /// returns click position.
     pub fn get_click_pos(&self, button: MouseButton) -> Option<Pos> {
-        match button {
-            MouseButton::Left => self.mouse_left.pos,
-            MouseButton::Right => self.mouse_right.pos,
-            _ => None,
+        if self.has_triggered(button) {
+            cursor_pos_to_world_pos(self.window_size, self.now_cursor_pos)
+        } else {
+            None
         }
     }
 }

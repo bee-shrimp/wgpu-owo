@@ -178,11 +178,7 @@ impl ApplicationHandler for App {
             return;
         }
 
-        // -------------------------------------------------------- mouse state update
-
-        self.input.update_mouse_state();
-
-        // -------------------------------------------------------- update world if clicked
+        // -------------------------------------------------------- update mouse.
 
         let left_click_pos = if self.input.has_triggered(MouseButton::Left) {
             self.input.get_click_pos(MouseButton::Left)
@@ -196,12 +192,17 @@ impl ApplicationHandler for App {
             None
         };
 
+        // -------------------------------------------------------- update inpur handler.
+
+        self.input.update_for_next_frame();
+
+        // -------------------------------------------------------- update world.
+
         self.world
             .update(left_click_pos, right_click_pos, dt)
             .expect("failed to update world");
 
-        // -------------------------------------------------------- update
-        // self.world.update(dt).expect("failed to update world");
+        // -------------------------------------------------------- update renderer.
 
         let renderer = self.renderer.as_mut().expect("failed to find renderer");
 
