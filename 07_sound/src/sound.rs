@@ -13,17 +13,18 @@ impl SoundPlayer {
         let stream_handle = rodio::DeviceSinkBuilder::open_default_sink()?;
         Ok(Self { stream_handle })
     }
-    pub fn play_sine(&self) -> anyhow::Result<()> {
-        let player = rodio::Player::connect_new(&self.stream_handle.mixer());
 
-        let source = SineWave::new(700.0)
-            .take_duration(Duration::from_secs_f32(0.2))
-            .amplify(0.20);
-        player.append(source);
-
-        thread::sleep(Duration::from_millis(1500));
-        Ok(())
-    }
+    // pub fn play_sine(&self) -> anyhow::Result<()> {
+    //     let player = rodio::Player::connect_new(&self.stream_handle.mixer());
+    //
+    //     let source = SineWave::new(700.0)
+    //         .take_duration(Duration::from_secs_f32(0.2))
+    //         .amplify(0.20);
+    //     player.append(source);
+    //
+    //     thread::sleep(Duration::from_millis(1500));
+    //     Ok(())
+    // }
 
     pub fn play_spawn(&self) -> anyhow::Result<()> {
         let mixer = self.stream_handle.mixer();
