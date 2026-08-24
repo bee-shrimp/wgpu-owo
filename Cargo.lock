@@ -2546,6 +2546,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "sound"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "env_logger",
+ "glam",
+ "image",
+ "log",
+ "pollster",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "space"
 version = "0.1.0"
 dependencies = [
