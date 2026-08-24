@@ -135,10 +135,30 @@ what i learnt:
 
 what it does:
 
-- draw grids with robot pixel arts.  
-- robot desappears with left mouse click.  
-- robot reappears with right mouse click.  
+- robot appears with left mouse click.  
+- robot desappears with right mouse click.  
+- robots are animated.  
 
 how it works:  
-ref
+
+- CreateEntitySystem now can create an entity with a position.  
+- input handling is neater.  
+
+what i learnt:  
+
+- grid system was harder. i should have done this earlier instead.  
+
+reference:
 [https://cs.pomona.edu/classes/cs181g/notes/input-winit.html]
+
+## 07_sound
+
+what it does:
+
+- same with 06_death.  
+- except spawn/despawn has SE.  
+- systems are handled a bit neater.  
+
+how it works:  
+
+what i learnt:  
