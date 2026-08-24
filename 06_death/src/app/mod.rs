@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use winit::{
     application::ApplicationHandler,
-    event::{ElementState, KeyEvent, MouseButton, WindowEvent},
+    event::{ElementState, KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
@@ -16,8 +16,8 @@ use crate::world::World;
 
 use crate::ecs::{Pos, Size};
 
-mod input;
-pub use input::InputHandler;
+pub mod input;
+use input::InputHandler;
 
 // ---------------------------------------------------------------- App struct
 
@@ -44,7 +44,7 @@ impl ApplicationHandler for App {
         self.world = World::default();
         self.world.init().expect("failed to init world");
 
-        let instances = self.world.get_instances();
+        let instances = self.world.update_instances();
 
         // -------------------------------------------------------- init input handler
 
@@ -178,35 +178,23 @@ impl ApplicationHandler for App {
             return;
         }
 
-        // -------------------------------------------------------- update mouse.
-
-        let left_click_pos = if self.input.has_triggered(MouseButton::Left) {
-            self.input.get_click_pos(MouseButton::Left)
-        } else {
-            None
-        };
-
-        let right_click_pos = if self.input.has_triggered(MouseButton::Right) {
-            self.input.get_click_pos(MouseButton::Right)
-        } else {
-            None
-        };
-
         // -------------------------------------------------------- update inpur handler.
+
+        let input_state = self.input.get_input_state();
 
         self.input.update_for_next_frame();
 
         // -------------------------------------------------------- update world.
 
         self.world
-            .update(left_click_pos, right_click_pos, dt)
+            .update(input_state, dt)
             .expect("failed to update world");
 
         // -------------------------------------------------------- update renderer.
 
         let renderer = self.renderer.as_mut().expect("failed to find renderer");
 
-        let instances = self.world.get_instances();
+        let instances = self.world.update_instances();
 
         renderer.update(instances);
         renderer.get_window().request_redraw();

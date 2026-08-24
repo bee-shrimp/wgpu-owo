@@ -11,6 +11,8 @@ use crate::ecs::{
 };
 use crate::renderer::InstanceData;
 
+use crate::app::input::InputState;
+
 // ---------------------------------------------------------------- world struct
 
 pub struct World {
@@ -64,12 +66,7 @@ impl World {
     }
 
     /// updates components.
-    pub fn update(
-        &mut self,
-        left_click_pos: Option<Pos>,
-        right_click_pos: Option<Pos>,
-        dt: f32,
-    ) -> anyhow::Result<()> {
+    pub fn update(&mut self, input_state: InputState, dt: f32) -> anyhow::Result<()> {
         self.update_targets.truncate(0);
         self.update_targets
             .extend(self.components.with_animation_state());
@@ -84,7 +81,7 @@ impl World {
         CreateEntitySystem::create_entity_with_pos(
             &mut self.entity_manager,
             &mut self.components,
-            left_click_pos,
+            input_state.left_click,
             AnimationId::new(0),
         )
         .context("failed to create entity")?;
@@ -97,16 +94,16 @@ impl World {
             &mut self.entity_manager,
             &mut self.components,
             &self.update_targets,
-            right_click_pos,
+            input_state.right_click,
         )?;
 
-        self.update_instances();
+        // self.update_instances();
 
         Ok(())
     }
 
     /// updates instance data.
-    pub fn update_instances(&mut self) {
+    pub fn update_instances(&mut self) -> &[InstanceData] {
         self.instances.truncate(0);
 
         self.update_targets.truncate(0);
@@ -117,6 +114,8 @@ impl World {
             &self.anim_registry,
             &self.update_targets,
         ));
+
+        &self.instances
     }
 
     /// pause/unpause.
@@ -124,10 +123,10 @@ impl World {
         self.is_running = !self.is_running;
     }
 
-    /// return list of `InstanceData`.
-    pub fn get_instances(&self) -> &[InstanceData] {
-        &self.instances
-    }
+    // /// return list of `InstanceData`.
+    // pub fn get_instances(&self) -> &[InstanceData] {
+    //     &self.instances
+    // }
 
     /// return if paused.
     pub const fn is_running(&self) -> bool {

@@ -10,6 +10,12 @@ use crate::{
 const KEY_COUNT: usize = 255;
 const MOUSE_BUTTONS: usize = 3;
 
+#[derive(Debug, Clone, Copy)]
+pub struct InputState {
+    pub left_click: Option<Pos>,
+    pub right_click: Option<Pos>,
+}
+
 // ---------------------------------------------------------------- input handler
 
 pub struct InputHandler {
@@ -120,6 +126,14 @@ impl InputHandler {
             cursor_pos_to_world_pos(self.window_size, self.now_cursor_pos)
         } else {
             None
+        }
+    }
+
+    /// returns input state.
+    pub fn get_input_state(&self) -> InputState {
+        InputState {
+            left_click: self.get_click_pos(MouseButton::Left),
+            right_click: self.get_click_pos(MouseButton::Right),
         }
     }
 }
