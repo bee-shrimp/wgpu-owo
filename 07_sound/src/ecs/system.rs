@@ -76,7 +76,7 @@ impl Systems {
                 &mut world.entity_manager,
                 &mut world.components,
                 input.left_click,
-                AnimationId::new(0),
+                AnimationId::new(1),
             )
             .context("failed to create entity")?;
 

@@ -3,7 +3,7 @@
 use std::mem;
 use wgpu::util::DeviceExt;
 
-use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH};
+use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, MAX_ENTITIES};
 use glam::{Mat4, Vec3, camera};
 
 // ---------------------------------------------------------------- struct for uniform buffer
@@ -146,11 +146,12 @@ pub fn create_vertex_buffer(
 
 // ---------------------------------------------------------------- instance buffer
 
-pub fn create_instance_buffer(device: &wgpu::Device, instances: &[InstanceData]) -> wgpu::Buffer {
-    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+pub fn create_instance_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+    device.create_buffer(&wgpu::wgt::BufferDescriptor {
         label: Some("instance buffer"),
-        contents: bytemuck::cast_slice(instances),
+        size: (MAX_ENTITIES as u64 * std::mem::size_of::<InstanceData>() as u64),
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
     })
 }
 

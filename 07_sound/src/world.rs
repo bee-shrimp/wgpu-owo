@@ -71,12 +71,10 @@ impl World {
     ) -> anyhow::Result<()> {
         self.systems.update(&mut self.data, &input, sound, dt)?;
 
-        // self.update_instances();
-
         Ok(())
     }
 
-    /// updates instance data.
+    /// returns updated instance data.
     pub fn update_instances(&mut self) -> &[InstanceData] {
         self.systems.update_instances(&mut self.data);
 

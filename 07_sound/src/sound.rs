@@ -1,65 +1,48 @@
-use rodio::Source;
-use rodio::source::SineWave;
-use std::io::BufReader;
-use std::thread;
-use std::time::Duration;
+use std::io::Cursor;
+
+use rodio::{Decoder, Source};
 
 pub struct SoundPlayer {
-    stream_handle: rodio::MixerDeviceSink,
+    _stream_handle: rodio::MixerDeviceSink,
+    _bgm_player: rodio::Player,
+    mixer: rodio::mixer::Mixer,
+    sources: [Vec<u8>; 2],
 }
 
 impl SoundPlayer {
     pub fn new() -> anyhow::Result<Self> {
         let stream_handle = rodio::DeviceSinkBuilder::open_default_sink()?;
-        Ok(Self { stream_handle })
+        let mixer = stream_handle.mixer().clone();
+
+        let spawn = std::fs::read("assets/powerUp.wav")?;
+        let despawn = std::fs::read("assets/explosion.wav")?;
+
+        let player = rodio::Player::connect_new(stream_handle.mixer());
+
+        let file = std::fs::File::open("assets/crow_song.wav")?;
+        let source = rodio::Decoder::try_from(file)?.repeat_infinite();
+        player.append(source);
+
+        Ok(Self {
+            _stream_handle: stream_handle,
+            _bgm_player: player,
+            mixer,
+            sources: [spawn, despawn],
+        })
     }
 
-    // pub fn play_sine(&self) -> anyhow::Result<()> {
-    //     let player = rodio::Player::connect_new(&self.stream_handle.mixer());
-    //
-    //     let source = SineWave::new(700.0)
-    //         .take_duration(Duration::from_secs_f32(0.2))
-    //         .amplify(0.20);
-    //     player.append(source);
-    //
-    //     thread::sleep(Duration::from_millis(1500));
-    //     Ok(())
-    // }
-
     pub fn play_spawn(&self) -> anyhow::Result<()> {
-        let mixer = self.stream_handle.mixer();
-
-        let spawn = {
-            // Play a WAV file.
-            let file = std::fs::File::open("assets/powerUp.wav")?;
-            let player = rodio::play(mixer, BufReader::new(file))?;
-            player.set_volume(0.2);
-            player
-        };
-        println!("Started spawn (explosion.wav)");
-        thread::sleep(Duration::from_millis(1500));
-
-        drop(spawn);
-        println!("Stopped spawn");
+        let cursor = Cursor::new(self.sources[0].clone());
+        let source = Decoder::try_from(cursor)?.amplify(0.5);
+        self.mixer.add(source);
 
         Ok(())
     }
 
     pub fn play_despawn(&self) -> anyhow::Result<()> {
-        let mixer = self.stream_handle.mixer();
-
-        let despawn = {
-            // Play a WAV file.
-            let file = std::fs::File::open("assets/explosion.wav")?;
-            let player = rodio::play(mixer, BufReader::new(file))?;
-            player.set_volume(0.2);
-            player
-        };
-        println!("Started despawn (explosion.wav)");
-        thread::sleep(Duration::from_millis(1500));
-
-        drop(despawn);
-        println!("Stopped despawn");
+        let cursor = Cursor::new(self.sources[1].clone());
+        let source = Decoder::try_from(cursor)?.amplify(0.5);
+        self.mixer.add(source);
 
         Ok(())
     }
