@@ -26,6 +26,7 @@ pub struct InputHandler {
     now_cursor_pos: Pos,
     window_size: Size,
 }
+
 impl Default for InputHandler {
     fn default() -> Self {
         Self {

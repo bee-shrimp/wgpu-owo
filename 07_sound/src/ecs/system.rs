@@ -46,7 +46,6 @@ impl Systems {
         AnimationSystem::update(world, dt)?;
 
         let create_triggered = CreateEntitySystem::update(world, input)?;
-
         let kill_triggered = KillEntitySystem::update(world, input)?;
 
         if create_triggered == Some(true) || kill_triggered == Some(true) {
@@ -88,11 +87,9 @@ impl AnimationSystem {
             .extend(world.components.with_animation_state());
 
         for entity in &world.update_targets {
-            let mut state = *world
-                .components
-                .animations
-                .get(*entity)
-                .context("animation system: failed to get animation state")?;
+            let Some(state) = world.components.animations.get_mut(*entity) else {
+                continue;
+            };
 
             state.elapsed += dt;
 
@@ -100,15 +97,10 @@ impl AnimationSystem {
 
             if state.elapsed >= def.duration_per_frame {
                 state.elapsed -= def.duration_per_frame;
-                state.current_frame = (state.current_frame + 1) % def.frame_count as u8;
+                state.current_frame = (state.current_frame + 1) % u8::try_from(def.frame_count)?;
             }
-
-            *world
-                .components
-                .animations
-                .get_mut(*entity)
-                .context("animation system: failed to get mut animation")? = state;
         }
+
         Ok(())
     }
 }
@@ -161,7 +153,7 @@ fn create_entity_with_pos(
         AnimationState {
             current_frame: 0,
             elapsed: 0.0,
-            id: anim_id.index as u8,
+            id: u8::try_from(anim_id.index)?,
         },
     )?;
 

@@ -93,7 +93,7 @@ impl Renderer {
         );
 
         let instance_buffer = buffers::create_instance_buffer(&device);
-        let num_instances = instances.len() as u32;
+        let num_instances = u32::try_from(instances.len())?;
 
         let index_buffer = buffers::create_index_buffer(&device, buffers::RECT_INDICES);
 
@@ -204,10 +204,10 @@ impl Renderer {
     }
 
     pub fn render(&self) -> Result<()> {
+        // no render unless the surface is configured
         if !self.is_surface_configured {
             return Ok(());
         }
-        // no render unless the surface is configured
 
         // -------------------------------------------------------- surface texture view
 
@@ -249,7 +249,7 @@ impl Renderer {
             &self.instance_buffer,
             &self.index_buffer,
             self.num_instances,
-        );
+        )?;
 
         renderpass::draw_scaler_renderpass(
             &mut encoder,

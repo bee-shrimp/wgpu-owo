@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------- imports
 
+use anyhow::{Ok, Result};
+
 use crate::{
     config::{LOGIC_HEIGHT, LOGIC_WIDTH},
     ecs::Size,
@@ -27,7 +29,7 @@ pub fn draw_mid_renderpass(
     index_buffer: &wgpu::Buffer,
 
     num_instances: u32,
-) {
+) -> Result<()> {
     // ------------------------------------------------------------ mid renderpass
 
     let mut mid_renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -47,7 +49,7 @@ pub fn draw_mid_renderpass(
         multiview_mask: None,
     });
 
-    let num_indices = buffers::RECT_INDICES.len() as u32;
+    let num_indices = u32::try_from(buffers::RECT_INDICES.len())?;
 
     // ------------------------------------------------------------ use the renderpass
 
@@ -61,6 +63,8 @@ pub fn draw_mid_renderpass(
     // ------------------------------------------------------------ end the renderpass
 
     drop(mid_renderpass);
+
+    Ok(())
 }
 
 /// samples a texture and draw bigger onto the surface.
