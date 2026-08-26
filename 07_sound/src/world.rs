@@ -39,7 +39,6 @@ impl Default for WorldData {
 
 pub struct World {
     data: WorldData,
-    systems: Systems,
     is_running: bool,
 }
 
@@ -50,7 +49,6 @@ impl Default for World {
     fn default() -> Self {
         Self {
             data: WorldData::default(),
-            systems: Systems::new(),
             is_running: true,
         }
     }
@@ -59,21 +57,21 @@ impl Default for World {
 impl World {
     /// initialises world with entities.
     pub fn init(&mut self) -> Result<()> {
-        self.systems.init(&mut self.data)?;
+        Systems::init(&mut self.data)?;
         self.update_instances();
         Ok(())
     }
 
     /// updates components.
     pub fn update(&mut self, input: &InputState, sound: &SoundPlayer, dt: f32) -> Result<()> {
-        self.systems.update(&mut self.data, &input, sound, dt)?;
+        Systems::update(&mut self.data, input, sound, dt)?;
 
         Ok(())
     }
 
     /// returns updated instance data.
     pub fn update_instances(&mut self) -> &[InstanceData] {
-        self.systems.update_instances(&mut self.data);
+        Systems::update_instances(&mut self.data);
 
         &self.data.instances
     }

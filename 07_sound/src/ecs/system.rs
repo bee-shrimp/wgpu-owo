@@ -16,26 +16,10 @@ use crate::world::WorldData;
 
 // ---------------------------------------------------------------- systems storage
 
-pub struct Systems {
-    sound: SoundSystem,
-    animator: AnimationSystem,
-    entity_creator: CreateEntitySystem,
-    entity_killer: KillEntitySystem,
-    instance_data_builder: InstanceDataBuildSystem,
-}
+pub struct Systems {}
 
 impl Systems {
-    pub fn new() -> Self {
-        Self {
-            sound: SoundSystem,
-            animator: AnimationSystem,
-            entity_creator: CreateEntitySystem::default(),
-            entity_killer: KillEntitySystem::default(),
-            instance_data_builder: InstanceDataBuildSystem,
-        }
-    }
-
-    pub fn init(&mut self, world: &mut WorldData) -> Result<()> {
+    pub fn init(world: &mut WorldData) -> Result<()> {
         init_animation_registry(&mut world.anim_registry)?;
 
         let center = Pos {
@@ -43,39 +27,37 @@ impl Systems {
             y: f32::from(LOGIC_HEIGHT / 2 - RECT_HEIGHT / 2),
         };
 
-        self.entity_creator
-            .create_entity_with_pos(
-                &mut world.entity_manager,
-                &mut world.components,
-                center,
-                AnimationId::new(0),
-            )
-            .context("failed to create entity")?;
+        create_entity_with_pos(
+            &mut world.entity_manager,
+            &mut world.components,
+            center,
+            AnimationId::new(0),
+        )
+        .context("failed to create entity")?;
         Ok(())
     }
 
     pub fn update(
-        &mut self,
         world: &mut WorldData,
         input: &InputState,
         sound: &SoundPlayer,
         dt: f32,
     ) -> Result<()> {
-        self.animator.update(world, dt)?;
+        AnimationSystem::update(world, dt)?;
 
-        self.entity_creator.update(world, input)?;
+        let create_triggered = CreateEntitySystem::update(world, input)?;
 
-        self.entity_killer.update(world, input)?;
+        let kill_triggered = KillEntitySystem::update(world, input)?;
 
-        if self.entity_killer.has_triggered() || self.entity_creator.has_triggered() {
-            self.sound.play(input, sound)?;
+        if create_triggered == Some(true) || kill_triggered == Some(true) {
+            SoundSystem::play(input, sound)?;
         }
 
         Ok(())
     }
 
-    pub fn update_instances(&self, world: &mut WorldData) {
-        self.instance_data_builder.update(world);
+    pub fn update_instances(world: &mut WorldData) {
+        InstanceDataBuildSystem::update(world);
     }
 }
 
@@ -83,7 +65,7 @@ impl Systems {
 
 struct SoundSystem;
 impl SoundSystem {
-    fn play(&self, input: &InputState, sound: &SoundPlayer) -> Result<()> {
+    fn play(input: &InputState, sound: &SoundPlayer) -> Result<()> {
         if input.left_click.is_some() {
             sound.play_spawn()?;
         }
@@ -99,8 +81,8 @@ impl SoundSystem {
 
 pub struct AnimationSystem;
 impl AnimationSystem {
-    fn update(&self, world: &mut WorldData, dt: f32) -> Result<()> {
-        world.update_targets.truncate(0);
+    fn update(world: &mut WorldData, dt: f32) -> Result<()> {
+        world.update_targets.clear();
         world
             .update_targets
             .extend(world.components.with_animation_state());
@@ -133,19 +115,15 @@ impl AnimationSystem {
 
 // ---------------------------------------------------------------- create entity system
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct CreateEntitySystem {
-    triggered: bool,
-}
+pub struct CreateEntitySystem {}
 
 impl CreateEntitySystem {
-    fn update(&mut self, world: &mut WorldData, input: &InputState) -> Result<()> {
+    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<bool>> {
         let Some(pos) = input.left_click else {
-            self.triggered = false;
-            return Ok(());
+            return Ok(None);
         };
 
-        self.create_entity_with_pos(
+        create_entity_with_pos(
             &mut world.entity_manager,
             &mut world.components,
             pos,
@@ -153,178 +131,165 @@ impl CreateEntitySystem {
         )
         .context("failed to create entity")?;
 
-        Ok(())
+        let triggered = true;
+
+        Ok(Some(triggered))
     }
-    fn create_entity_with_pos(
-        &mut self,
-        entity_manager: &mut EntityManager,
-        components: &mut Components,
-        pos: Pos,
-        anim_id: AnimationId,
-    ) -> Result<()> {
-        let Some(entity) = entity_manager.spawn() else {
-            return Ok(());
-        };
+}
+fn create_entity_with_pos(
+    entity_manager: &mut EntityManager,
+    components: &mut Components,
+    pos: Pos,
+    anim_id: AnimationId,
+) -> Result<()> {
+    let Some(entity) = entity_manager.spawn() else {
+        return Ok(());
+    };
 
-        components.positions.insert(entity, pos)?;
+    components.positions.insert(entity, pos)?;
 
-        components.sizes.insert(
-            entity,
-            Size {
-                w: f32::from(RECT_WIDTH),
-                h: f32::from(RECT_HEIGHT),
-            },
-        )?;
+    components.sizes.insert(
+        entity,
+        Size {
+            w: f32::from(RECT_WIDTH),
+            h: f32::from(RECT_HEIGHT),
+        },
+    )?;
 
-        components.animations.insert(
-            entity,
-            AnimationState {
-                current_frame: 0,
-                elapsed: 0.0,
-                id: anim_id.index as u8,
-            },
-        )?;
+    components.animations.insert(
+        entity,
+        AnimationState {
+            current_frame: 0,
+            elapsed: 0.0,
+            id: anim_id.index as u8,
+        },
+    )?;
 
-        self.triggered = true;
-
-        Ok(())
-    }
-
-    fn has_triggered(&self) -> bool {
-        self.triggered
-    }
-
-    // /// adds data to `ComponentStorage`[[entity.index]].
-    // /// uses `MAX_ENTITIES` to determine the number of entities.
-    // pub fn create_grid_entities(
-    //     entity_manager: &mut EntityManager,
-    //     components: &mut Components,
-    //     // sprite: Sprite,
-    //     anim_id: AnimationId,
-    // ) -> Result<()> {
-    //     use config::MAX_COL;
-    //     for _ in 0..MAX_ENTITIES {
-    //         let entity = entity_manager.spawn().context("no free slot")?;
-    //
-    //         components
-    //             .positions
-    //             .insert(
-    //                 entity,
-    //                 Pos {
-    //                     x: f32::from(RECT_WIDTH * (entity.index as u8 % MAX_COL)),
-    //                     y: f32::from(RECT_HEIGHT * (entity.index as u8 / MAX_COL)),
-    //                 },
-    //             )
-    //             .context("failed to add position")?;
-    //
-    //         components
-    //             .sizes
-    //             .insert(
-    //                 entity,
-    //                 Size {
-    //                     w: f32::from(RECT_WIDTH),
-    //                     h: f32::from(RECT_HEIGHT),
-    //                 },
-    //             )
-    //             .context("failed to add size")?;
-    //
-    //         // components
-    //         //     .sprites
-    //         //     .insert(entity, sprite)
-    //         //     .context("failed to add sprite data")?;
-    //
-    //         components
-    //             .animations
-    //             .insert(
-    //                 entity,
-    //                 AnimationState {
-    //                     current_frame: 0,
-    //                     elapsed: 0.0,
-    //                     id: anim_id.index as u8,
-    //                 },
-    //             )
-    //             .context("failed to add animation")?;
-    //     }
-    //     Ok(())
-    // }
+    Ok(())
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct KillEntitySystem {
-    triggered: bool,
-}
+// /// adds data to `ComponentStorage`[[entity.index]].
+// /// uses `MAX_ENTITIES` to determine the number of entities.
+// pub fn create_grid_entities(
+//     entity_manager: &mut EntityManager,
+//     components: &mut Components,
+//     // sprite: Sprite,
+//     anim_id: AnimationId,
+// ) -> Result<()> {
+//     use config::MAX_COL;
+//     for _ in 0..MAX_ENTITIES {
+//         let entity = entity_manager.spawn().context("no free slot")?;
+//
+//         components
+//             .positions
+//             .insert(
+//                 entity,
+//                 Pos {
+//                     x: f32::from(RECT_WIDTH * (entity.index as u8 % MAX_COL)),
+//                     y: f32::from(RECT_HEIGHT * (entity.index as u8 / MAX_COL)),
+//                 },
+//             )
+//             .context("failed to add position")?;
+//
+//         components
+//             .sizes
+//             .insert(
+//                 entity,
+//                 Size {
+//                     w: f32::from(RECT_WIDTH),
+//                     h: f32::from(RECT_HEIGHT),
+//                 },
+//             )
+//             .context("failed to add size")?;
+//
+//         // components
+//         //     .sprites
+//         //     .insert(entity, sprite)
+//         //     .context("failed to add sprite data")?;
+//
+//         components
+//             .animations
+//             .insert(
+//                 entity,
+//                 AnimationState {
+//                     current_frame: 0,
+//                     elapsed: 0.0,
+//                     id: anim_id.index as u8,
+//                 },
+//             )
+//             .context("failed to add animation")?;
+//     }
+//     Ok(())
+// }
+
+pub struct KillEntitySystem {}
 
 impl KillEntitySystem {
-    fn update(&mut self, world: &mut WorldData, input: &InputState) -> Result<()> {
+    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<bool>> {
         let Some(pos) = input.right_click else {
-            self.triggered = false;
-            return Ok(());
+            return Ok(None);
         };
 
-        world.update_targets.truncate(0);
+        world.update_targets.clear();
         world
             .update_targets
             .extend(world.components.with_pos_and_size());
 
-        self.kill_entity_with_pos(
+        kill_entity_with_pos(
             &mut world.entity_manager,
             &mut world.components,
             &world.update_targets,
             pos,
         )?;
 
-        Ok(())
+        let triggered = true;
+
+        Ok(Some(triggered))
     }
+}
 
-    fn kill_entity_with_pos(
-        &mut self,
-        entity_manager: &mut EntityManager,
-        components: &mut Components,
-        entities_with_pos_and_size: &[Entity],
-        click_pos: Pos,
-    ) -> Result<()> {
-        for entity in entities_with_pos_and_size {
-            let entity = *entity;
+fn kill_entity_with_pos(
+    entity_manager: &mut EntityManager,
+    components: &mut Components,
+    entities_with_pos_and_size: &[Entity],
+    click_pos: Pos,
+) -> Result<()> {
+    for entity in entities_with_pos_and_size {
+        let entity = *entity;
 
-            let pos = components
-                .positions
-                .get(entity)
-                .context("kill entity system: failed to get pos")?;
-            let size = components
-                .sizes
-                .get(entity)
-                .context("kill entity system: failed to get pos")?;
+        let pos = components
+            .positions
+            .get(entity)
+            .context("kill entity system: failed to get pos")?;
+        let size = components
+            .sizes
+            .get(entity)
+            .context("kill entity system: failed to get pos")?;
 
-            if click_pos.x >= pos.x
-                && pos.x + size.w >= click_pos.x
-                && click_pos.y >= pos.y
-                && pos.y + size.h >= click_pos.y
-            {
-                entity_manager.despawn(entity)?;
-                components.positions.remove(entity)?;
-                components.sizes.remove(entity)?;
-                components.animations.remove(entity)?;
-                self.triggered = true;
-            }
+        if click_pos.x >= pos.x
+            && pos.x + size.w >= click_pos.x
+            && click_pos.y >= pos.y
+            && pos.y + size.h >= click_pos.y
+        {
+            entity_manager.despawn(entity)?;
+            components.positions.remove(entity)?;
+            components.sizes.remove(entity)?;
+            components.animations.remove(entity)?;
         }
+    }
 
-        Ok(())
-    }
-    fn has_triggered(&self) -> bool {
-        self.triggered
-    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------- instance update system
 
-#[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
     /// build `InstanceData` from components data.
-    fn update(&self, world: &mut WorldData) {
-        world.instances.truncate(0);
+    fn update(world: &mut WorldData) {
+        world.instances.clear();
 
-        world.update_targets.truncate(0);
+        world.update_targets.clear();
         world.update_targets.extend(world.components.iter_alive());
 
         world.instances.extend(instance_data_iter(

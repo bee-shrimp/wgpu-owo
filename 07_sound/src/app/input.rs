@@ -87,24 +87,15 @@ impl InputHandler {
     //
     // }
 
-    fn mouse_button_to_usize(&self, button: MouseButton) -> usize {
-        match button {
-            MouseButton::Left => 0,
-            MouseButton::Right => 1,
-            MouseButton::Middle => 2,
-            _ => 3,
-        }
-    }
-
     /// updates `MouseState`.
     pub fn button_pressed(&mut self, button: MouseButton) {
-        let idx = self.mouse_button_to_usize(button);
+        let idx = mouse_button_to_usize(button);
         self.now_mouse[idx] = true;
     }
 
     /// updates `MouseState`.
     pub fn button_released(&mut self, button: MouseButton) {
-        let idx = self.mouse_button_to_usize(button);
+        let idx = mouse_button_to_usize(button);
         self.now_mouse[idx] = false;
     }
 
@@ -116,8 +107,8 @@ impl InputHandler {
 
     // /// returns if mouse was clicked.
     pub fn has_triggered(&self, button: MouseButton) -> bool {
-        self.now_mouse[self.mouse_button_to_usize(button)]
-            && !self.prev_mouse[self.mouse_button_to_usize(button)]
+        self.now_mouse[mouse_button_to_usize(button)]
+            && !self.prev_mouse[mouse_button_to_usize(button)]
     }
 
     /// returns click position.
@@ -135,6 +126,16 @@ impl InputHandler {
             left_click: self.get_click_pos(MouseButton::Left),
             right_click: self.get_click_pos(MouseButton::Right),
         }
+    }
+}
+
+/// maps `MouseButton` to usize.
+fn mouse_button_to_usize(button: MouseButton) -> usize {
+    match button {
+        MouseButton::Left => 0,
+        MouseButton::Right => 1,
+        MouseButton::Middle => 2,
+        _ => 3,
     }
 }
 
