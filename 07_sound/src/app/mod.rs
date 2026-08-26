@@ -57,12 +57,15 @@ impl ApplicationHandler for App {
             h: window_size.height as f32,
         });
 
-        // -------------------------------------------------------- create renderer
+        // -------------------------------------------------------- create renderer/sound player
 
-        self.renderer = Some(
-            pollster::block_on(Renderer::new(window, event_loop, instances))
-                .expect("failed to create renderer"),
-        );
+        let (renderer, sound_player) = smol::block_on(smol::future::zip(
+            Renderer::new(window, event_loop, instances),
+            SoundPlayer::new(),
+        ));
+
+        self.renderer = Some(renderer.expect("failed to create renderer"));
+        self.sound = Some(sound_player.expect("failed to create sound player"));
 
         // -------------------------------------------------------- init renderer
 
@@ -72,7 +75,6 @@ impl ApplicationHandler for App {
             .update(instances);
 
         // -------------------------------------------------------- init other fields
-        self.sound = Some(SoundPlayer::new().expect("failed to create sound player"));
 
         self.last_frame_time = Some(Instant::now());
     }
