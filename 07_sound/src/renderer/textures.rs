@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------- imports
-use anyhow::Context;
+use anyhow::{Context, Result};
 
 use image::GenericImageView;
 
@@ -17,7 +17,7 @@ pub fn create_diffuse_texture(
     queue: &wgpu::Queue,
     label: &str,
     diffuse_bytes: &[u8],
-) -> anyhow::Result<wgpu::TextureView> {
+) -> Result<wgpu::TextureView> {
     // ------------------------------------------------------------ image data
 
     let image = image::load_from_memory(diffuse_bytes).context("failed to load image")?;

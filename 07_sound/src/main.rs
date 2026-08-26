@@ -3,7 +3,7 @@
 
 // ---------------------------------------------------------------- imports
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 mod app;
@@ -12,15 +12,15 @@ use app::App;
 mod config;
 mod ecs;
 mod renderer;
+mod sound;
 mod sprite;
 mod world;
 
 mod animation;
-mod sound;
 
 // ---------------------------------------------------------------- main
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     env_logger::init();
 
     let event_loop = EventLoop::new().context("failed to create event loop")?;

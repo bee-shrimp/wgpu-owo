@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------- imports
 
+use anyhow::Result;
+
 use crate::config::MAX_ENTITIES;
 
 use crate::animation::AnimationRegistry;
@@ -56,19 +58,14 @@ impl Default for World {
 
 impl World {
     /// initialises world with entities.
-    pub fn init(&mut self) -> anyhow::Result<()> {
+    pub fn init(&mut self) -> Result<()> {
         self.systems.init(&mut self.data)?;
         self.update_instances();
         Ok(())
     }
 
     /// updates components.
-    pub fn update(
-        &mut self,
-        input: &InputState,
-        sound: &SoundPlayer,
-        dt: f32,
-    ) -> anyhow::Result<()> {
+    pub fn update(&mut self, input: &InputState, sound: &SoundPlayer, dt: f32) -> Result<()> {
         self.systems.update(&mut self.data, &input, sound, dt)?;
 
         Ok(())

@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------- imports
 
+use anyhow::Result;
+
 use crate::config::MAX_ENTITIES;
 
 // ---------------------------------------------------------------- struct for entities
@@ -53,7 +55,7 @@ impl EntityManager {
     }
 
     /// stores id for reuse
-    pub fn despawn(&mut self, entity: Entity) -> anyhow::Result<()> {
+    pub fn despawn(&mut self, entity: Entity) -> Result<()> {
         if entity.index >= MAX_ENTITIES {
             anyhow::bail!("invalid entity id");
         }

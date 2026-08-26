@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
@@ -34,7 +34,8 @@ impl Systems {
             instance_data_builder: InstanceDataBuildSystem,
         }
     }
-    pub fn init(&mut self, world: &mut WorldData) -> anyhow::Result<()> {
+
+    pub fn init(&mut self, world: &mut WorldData) -> Result<()> {
         init_animation_registry(&mut world.anim_registry)?;
 
         let center = Pos {
@@ -46,81 +47,87 @@ impl Systems {
             .create_entity_with_pos(
                 &mut world.entity_manager,
                 &mut world.components,
-                Some(center),
+                center,
                 AnimationId::new(0),
             )
             .context("failed to create entity")?;
         Ok(())
     }
+
     pub fn update(
         &mut self,
         world: &mut WorldData,
         input: &InputState,
         sound: &SoundPlayer,
         dt: f32,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
+        self.animator.update(world, dt)?;
+
+        self.entity_creator.update(world, input)?;
+
+        self.entity_killer.update(world, input)?;
+
+        if self.entity_killer.has_triggered() || self.entity_creator.has_triggered() {
+            self.sound.play(input, sound)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_instances(&self, world: &mut WorldData) {
+        self.instance_data_builder.update(world);
+    }
+}
+
+// ---------------------------------------------------------------- sound system
+
+struct SoundSystem;
+impl SoundSystem {
+    fn play(&self, input: &InputState, sound: &SoundPlayer) -> Result<()> {
+        if input.left_click.is_some() {
+            sound.play_spawn()?;
+        }
+
+        if input.right_click.is_some() {
+            sound.play_despawn()?;
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------- animation system
+
+pub struct AnimationSystem;
+impl AnimationSystem {
+    fn update(&self, world: &mut WorldData, dt: f32) -> Result<()> {
         world.update_targets.truncate(0);
         world
             .update_targets
             .extend(world.components.with_animation_state());
 
-        self.animator.update(
-            &mut world.components,
-            &world.anim_registry,
-            &world.update_targets,
-            dt,
-        )?;
+        for entity in &world.update_targets {
+            let mut state = *world
+                .components
+                .animations
+                .get(*entity)
+                .context("animation system: failed to get animation state")?;
 
-        self.entity_creator
-            .create_entity_with_pos(
-                &mut world.entity_manager,
-                &mut world.components,
-                input.left_click,
-                AnimationId::new(1),
-            )
-            .context("failed to create entity")?;
+            state.elapsed += dt;
 
-        world.update_targets.truncate(0);
-        world
-            .update_targets
-            .extend(world.components.with_pos_and_size());
+            let def = world.anim_registry.get_def(AnimationId::new(state.id));
 
-        self.entity_killer.kill_entity_with_pos(
-            &mut world.entity_manager,
-            &mut world.components,
-            &world.update_targets,
-            input.right_click,
-        )?;
+            if state.elapsed >= def.duration_per_frame {
+                state.elapsed -= def.duration_per_frame;
+                state.current_frame = (state.current_frame + 1) % def.frame_count as u8;
+            }
 
-        if self.entity_killer.has_triggered() || self.entity_creator.has_triggered() {
-            self.sound.play(input, sound);
+            *world
+                .components
+                .animations
+                .get_mut(*entity)
+                .context("animation system: failed to get mut animation")? = state;
         }
-
         Ok(())
-    }
-    pub fn update_instances(&self, world: &mut WorldData) {
-        world.instances.truncate(0);
-
-        world.update_targets.truncate(0);
-        world.update_targets.extend(world.components.iter_alive());
-
-        world.instances.extend(self.instance_data_builder.update(
-            &world.components,
-            &world.anim_registry,
-            &world.update_targets,
-        ));
-    }
-}
-struct SoundSystem;
-impl SoundSystem {
-    fn play(&self, input: &InputState, sound: &SoundPlayer) {
-        if input.left_click.is_some() {
-            sound.play_spawn().expect("failed to play sound");
-        }
-
-        if input.right_click.is_some() {
-            sound.play_despawn().expect("failed to play sound");
-        }
     }
 }
 
@@ -132,18 +139,29 @@ pub struct CreateEntitySystem {
 }
 
 impl CreateEntitySystem {
-    pub fn create_entity_with_pos(
-        &mut self,
-        entity_manager: &mut EntityManager,
-        components: &mut Components,
-        pos: Option<Pos>,
-        anim_id: AnimationId,
-    ) -> anyhow::Result<()> {
-        let Some(pos) = pos else {
+    fn update(&mut self, world: &mut WorldData, input: &InputState) -> Result<()> {
+        let Some(pos) = input.left_click else {
             self.triggered = false;
             return Ok(());
         };
 
+        self.create_entity_with_pos(
+            &mut world.entity_manager,
+            &mut world.components,
+            pos,
+            AnimationId::new(1),
+        )
+        .context("failed to create entity")?;
+
+        Ok(())
+    }
+    fn create_entity_with_pos(
+        &mut self,
+        entity_manager: &mut EntityManager,
+        components: &mut Components,
+        pos: Pos,
+        anim_id: AnimationId,
+    ) -> Result<()> {
         let Some(entity) = entity_manager.spawn() else {
             return Ok(());
         };
@@ -183,7 +201,7 @@ impl CreateEntitySystem {
     //     components: &mut Components,
     //     // sprite: Sprite,
     //     anim_id: AnimationId,
-    // ) -> anyhow::Result<()> {
+    // ) -> Result<()> {
     //     use config::MAX_COL;
     //     for _ in 0..MAX_ENTITIES {
     //         let entity = entity_manager.spawn().context("no free slot")?;
@@ -237,18 +255,34 @@ pub struct KillEntitySystem {
 }
 
 impl KillEntitySystem {
-    pub fn kill_entity_with_pos(
-        &mut self,
-        entity_manager: &mut EntityManager,
-        components: &mut Components,
-        entities_with_pos_and_size: &[Entity],
-        click_pos: Option<Pos>,
-    ) -> anyhow::Result<()> {
-        let Some(click_pos) = click_pos else {
+    fn update(&mut self, world: &mut WorldData, input: &InputState) -> Result<()> {
+        let Some(pos) = input.right_click else {
             self.triggered = false;
             return Ok(());
         };
 
+        world.update_targets.truncate(0);
+        world
+            .update_targets
+            .extend(world.components.with_pos_and_size());
+
+        self.kill_entity_with_pos(
+            &mut world.entity_manager,
+            &mut world.components,
+            &world.update_targets,
+            pos,
+        )?;
+
+        Ok(())
+    }
+
+    fn kill_entity_with_pos(
+        &mut self,
+        entity_manager: &mut EntityManager,
+        components: &mut Components,
+        entities_with_pos_and_size: &[Entity],
+        click_pos: Pos,
+    ) -> Result<()> {
         for entity in entities_with_pos_and_size {
             let entity = *entity;
 
@@ -286,21 +320,34 @@ impl KillEntitySystem {
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceDataBuildSystem;
 impl InstanceDataBuildSystem {
-    /// returns iterator of `InstanceData` built from components data.
-    pub fn update(
-        &self,
-        components: &Components,
-        registry: &AnimationRegistry,
-        alive_entities: &[Entity],
-    ) -> impl Iterator<Item = InstanceData> {
-        alive_entities
-            .iter()
-            .filter_map(|entity| build_instance_data(*entity, components, registry))
+    /// build `InstanceData` from components data.
+    fn update(&self, world: &mut WorldData) {
+        world.instances.truncate(0);
+
+        world.update_targets.truncate(0);
+        world.update_targets.extend(world.components.iter_alive());
+
+        world.instances.extend(instance_data_iter(
+            &world.components,
+            &world.anim_registry,
+            &world.update_targets,
+        ));
     }
 }
 
+/// returns iterator of `InstanceData` for entities in `update_targets`.
+fn instance_data_iter(
+    components: &Components,
+    registry: &AnimationRegistry,
+    update_targets: &[Entity],
+) -> impl Iterator<Item = InstanceData> {
+    update_targets
+        .iter()
+        .filter_map(|entity| build_instance_data(*entity, components, registry))
+}
+
 /// creates `InstanceData` for each entity.
-pub fn build_instance_data(
+fn build_instance_data(
     entity: Entity,
     components: &Components,
     registry: &AnimationRegistry,
@@ -320,48 +367,13 @@ pub fn build_instance_data(
     })
 }
 
-// ---------------------------------------------------------------- animation system
-
-pub struct AnimationSystem;
-impl AnimationSystem {
-    pub fn update(
-        &self,
-        components: &mut Components,
-        registry: &AnimationRegistry,
-        entities_with_animation_state: &[Entity],
-        dt: f32,
-    ) -> anyhow::Result<()> {
-        for entity in entities_with_animation_state {
-            let mut state = *components
-                .animations
-                .get(*entity)
-                .context("animation system: failed to get animation state")?;
-
-            state.elapsed += dt;
-
-            let def = registry.get_def(AnimationId::new(state.id));
-
-            if state.elapsed >= def.duration_per_frame {
-                state.elapsed -= def.duration_per_frame;
-                state.current_frame = (state.current_frame + 1) % def.frame_count as u8;
-            }
-
-            *components
-                .animations
-                .get_mut(*entity)
-                .context("animation system: failed to get mut animation")? = state;
-        }
-        Ok(())
-    }
-}
-
 // ---------------------------------------------------------------- toggle sprite system
 
 // pub struct ToggleSpriteSystem;
 //
 // impl ToggleSpriteSystem {
 //     /// toggle sprite of clicked position.
-//     pub fn update(components: &mut Components, click_pos: Pos) -> anyhow::Result<()> {
+//     pub fn update(components: &mut Components, click_pos: Pos) -> Result<()> {
 //         let gx = (click_pos.x / f32::from(RECT_WIDTH)).floor() as u8;
 //         let gy = (click_pos.y / f32::from(RECT_HEIGHT)).floor() as u8;
 //

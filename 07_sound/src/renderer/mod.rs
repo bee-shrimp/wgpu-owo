@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -61,7 +61,7 @@ impl Renderer {
         window: Arc<Window>,
         event_loop: &ActiveEventLoop,
         instances: &[InstanceData],
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
         // -------------------------------------------------------- init wgpu
 
         let (adapter, device, queue, surface, config) = init::init_wgpu(&window, event_loop)
@@ -203,7 +203,7 @@ impl Renderer {
         Ok(renderer)
     }
 
-    pub fn render(&self) -> anyhow::Result<()> {
+    pub fn render(&self) -> Result<()> {
         if !self.is_surface_configured {
             return Ok(());
         }

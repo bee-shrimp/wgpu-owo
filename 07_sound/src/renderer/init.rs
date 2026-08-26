@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use std::sync::Arc;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::Window;
@@ -10,7 +10,7 @@ use wgpu::{BackendOptions, InstanceFlags, MemoryBudgetThresholds};
 pub async fn init_wgpu(
     window: &Arc<Window>,
     event_loop: &ActiveEventLoop,
-) -> anyhow::Result<(
+) -> Result<(
     wgpu::Adapter,
     wgpu::Device,
     wgpu::Queue,

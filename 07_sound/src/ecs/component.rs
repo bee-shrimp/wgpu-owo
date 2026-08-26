@@ -3,6 +3,7 @@
 use crate::animation::AnimationState;
 use crate::config::MAX_ENTITIES;
 use crate::ecs::entity::Entity;
+use anyhow::Result;
 
 // ---------------------------------------------------------------- struct for rects
 
@@ -62,7 +63,7 @@ impl<T: Default> ComponentStorage<T> {
     }
 
     /// adds T to component storage.
-    pub fn insert(&mut self, entity: Entity, component: T) -> anyhow::Result<()> {
+    pub fn insert(&mut self, entity: Entity, component: T) -> Result<()> {
         if entity.index >= MAX_ENTITIES {
             anyhow::bail!("entity index out of bounds");
         }
@@ -88,7 +89,7 @@ impl<T: Default> ComponentStorage<T> {
     }
 
     /// removes T from components array and kill entity(set alive == false).
-    pub fn remove(&mut self, entity: Entity) -> anyhow::Result<()> {
+    pub fn remove(&mut self, entity: Entity) -> Result<()> {
         if entity.index >= MAX_ENTITIES || !self.alive[entity.index] {
             anyhow::bail!("entity not found");
         }

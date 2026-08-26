@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 
 use crate::sprite::GridPos;
 
 const MAX_TOTAL_FRAMES: usize = 256;
 const MAX_ANIMATIONS: usize = 32;
 
-pub fn init_animation_registry(registry: &mut AnimationRegistry) -> anyhow::Result<()> {
+pub fn init_animation_registry(registry: &mut AnimationRegistry) -> Result<()> {
     const WALK_FRAMES: &[GridPos] = &[
         GridPos { gx: 0, gy: 0 },
         GridPos { gx: 1, gy: 0 },
@@ -122,7 +122,7 @@ impl AnimationRegistry {
         }
     }
 
-    pub fn register(&mut self, frames: &[GridPos], duration: f32) -> anyhow::Result<AnimationId> {
+    pub fn register(&mut self, frames: &[GridPos], duration: f32) -> Result<AnimationId> {
         let (offset, count) = self
             .frame_storage
             .allocate(frames.len())
