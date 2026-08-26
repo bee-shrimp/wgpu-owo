@@ -121,11 +121,7 @@ impl CreateEntitySystem {
             pos,
             AnimationId::new(1),
         )
-        .context("failed to create entity")?;
-
-        let triggered = true;
-
-        Ok(Some(triggered))
+        .context("failed to create entity")
     }
 }
 fn create_entity_with_pos(
@@ -133,9 +129,9 @@ fn create_entity_with_pos(
     components: &mut Components,
     pos: Pos,
     anim_id: AnimationId,
-) -> Result<()> {
+) -> Result<Option<bool>> {
     let Some(entity) = entity_manager.spawn() else {
-        return Ok(());
+        return Ok(None);
     };
 
     components.positions.insert(entity, pos)?;
@@ -156,8 +152,9 @@ fn create_entity_with_pos(
             id: u8::try_from(anim_id.index)?,
         },
     )?;
+    let triggered = true;
 
-    Ok(())
+    Ok(Some(triggered))
 }
 
 // /// adds data to `ComponentStorage`[[entity.index]].
@@ -232,11 +229,7 @@ impl KillEntitySystem {
             &mut world.components,
             &world.update_targets,
             pos,
-        )?;
-
-        let triggered = true;
-
-        Ok(Some(triggered))
+        )
     }
 }
 
@@ -245,7 +238,7 @@ fn kill_entity_with_pos(
     components: &mut Components,
     entities_with_pos_and_size: &[Entity],
     click_pos: Pos,
-) -> Result<()> {
+) -> Result<Option<bool>> {
     for entity in entities_with_pos_and_size {
         let entity = *entity;
 
@@ -270,7 +263,9 @@ fn kill_entity_with_pos(
         }
     }
 
-    Ok(())
+    let triggered = true;
+
+    Ok(Some(triggered))
 }
 
 // ---------------------------------------------------------------- instance update system
