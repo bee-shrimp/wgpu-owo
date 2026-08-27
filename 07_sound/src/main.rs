@@ -28,7 +28,11 @@ fn main() -> Result<()> {
     event_loop.set_control_flow(ControlFlow::Wait);
 
     let mut app = App::default();
-    event_loop.run_app(&mut app).context("failed to run app")?;
+    event_loop.run_app(&mut app)?;
+
+    if let Some(err) = app.take_error() {
+        eprintln!("{err:#}");
+    }
 
     Ok(())
 }

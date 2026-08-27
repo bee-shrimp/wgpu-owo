@@ -28,12 +28,8 @@ pub fn init_animation_registry(registry: &mut AnimationRegistry) -> Result<()> {
         GridPos { gx: 5, gy: 1 },
     ];
 
-    registry
-        .register(WALK_FRAMES, 0.16)
-        .context("failed to register an animation")?;
-    registry
-        .register(ENEMY_FRAMES, 0.16)
-        .context("failed to register an animation")?;
+    registry.register(WALK_FRAMES, 0.16)?;
+    registry.register(ENEMY_FRAMES, 0.16)?;
     Ok(())
 }
 

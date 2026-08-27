@@ -2,6 +2,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
+use anyhow::{Context, Error, Result};
 use winit::{
     application::ApplicationHandler,
     event::{ElementState, KeyEvent, WindowEvent},
@@ -30,53 +31,15 @@ pub struct App {
     world: World,
     input: InputHandler,
     last_frame_time: Option<Instant>,
+    error: Option<Error>,
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        // -------------------------------------------------------- create window object
-        let window = Arc::new(
-            event_loop
-                .create_window(Window::default_attributes())
-                .expect("failed to create window"),
-        );
-
-        // -------------------------------------------------------- create world
-
-        self.world = World::default();
-        self.world.init().expect("failed to init world");
-
-        let instances = self.world.update_instances();
-
-        // -------------------------------------------------------- init input handler
-
-        let window_size = window.inner_size();
-
-        self.input = InputHandler::new(Size {
-            w: window_size.width as f32,
-            h: window_size.height as f32,
-        });
-
-        // -------------------------------------------------------- create renderer/sound player
-
-        let (renderer, sound_player) = smol::block_on(smol::future::zip(
-            Renderer::new(window, event_loop, instances),
-            SoundPlayer::new(),
-        ));
-
-        self.renderer = Some(renderer.expect("failed to create renderer"));
-        self.sound = Some(sound_player.expect("failed to create sound player"));
-
-        // -------------------------------------------------------- init renderer
-
-        self.renderer
-            .as_mut()
-            .expect("failed to find renderer")
-            .update(instances);
-
-        // -------------------------------------------------------- init other fields
-
-        self.last_frame_time = Some(Instant::now());
+        if let Err(err) = self.init(event_loop) {
+            self.error = Some(err);
+            event_loop.exit();
+        };
     }
 
     // ------------------------------------------------------------ handle window events
@@ -107,7 +70,7 @@ impl ApplicationHandler for App {
             // ---------------------------------------------------- redraw
             //
             WindowEvent::RedrawRequested => match renderer.render() {
-                Ok(()) => {}
+                Ok(_) => {}
                 Err(e) => {
                     log::error!("{e}");
                     event_loop.exit();
@@ -152,7 +115,69 @@ impl ApplicationHandler for App {
     // ------------------------------------------------------------ things to do after everything else
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        //
+        // -------------------------------------------------------- error handling
+        if let Err(err) = self.update(event_loop) {
+            self.error = Some(err);
+            event_loop.exit();
+        };
+    }
+}
+
+impl App {
+    pub fn take_error(&mut self) -> Option<Error> {
+        self.error.take()
+    }
+
+    fn init(&mut self, event_loop: &ActiveEventLoop) -> Result<()> {
+        // -------------------------------------------------------- create window object
+        let window = Arc::new(
+            event_loop
+                .create_window(Window::default_attributes())
+                .context("failed to create window")?,
+        );
+
+        // -------------------------------------------------------- create world
+
+        self.world = World::default();
+        self.world.init().context("failed to init world")?;
+
+        let instances = self.world.update_instances();
+
+        // -------------------------------------------------------- init input handler
+
+        let window_size = window.inner_size();
+
+        self.input = InputHandler::new(Size {
+            w: window_size.width as f32,
+            h: window_size.height as f32,
+        });
+
+        // -------------------------------------------------------- create renderer/sound player
+
+        let (renderer, sound_player) = smol::block_on(smol::future::zip(
+            Renderer::new(window, event_loop, instances),
+            SoundPlayer::new(),
+        ));
+
+        self.renderer = Some(renderer.context("failed to create renderer")?);
+        self.sound = Some(sound_player.context("failed to create sound player")?);
+
+        // -------------------------------------------------------- init renderer
+
+        self.renderer
+            .as_mut()
+            .context("failed to find renderer")?
+            .update(instances);
+
+        // -------------------------------------------------------- init other fields
+
+        self.last_frame_time = Some(Instant::now());
+        self.error = None;
+
+        Ok(())
+    }
+
+    fn update(&mut self, event_loop: &ActiveEventLoop) -> Result<()> {
         // -------------------------------------------------------- calculate dt
 
         let now = Instant::now();
@@ -173,39 +198,43 @@ impl ApplicationHandler for App {
         // -------------------------------------------------------- return if paused and space is not pressed
 
         if !self.world.is_running() && !self.input.has_key(KeyCode::Space) {
-            return;
+            return Ok(());
         }
 
         // -------------------------------------------------------- pause/resume if space is pressed
 
         if self.input.has_key(KeyCode::Space) {
             self.world.toggle_running();
-            return;
+            return Ok(());
         }
 
-        // -------------------------------------------------------- update inpur handler.
+        // -------------------------------------------------------- get input state
 
         let input_state = self.input.get_input_state();
 
         self.input.update_for_next_frame();
 
-        // -------------------------------------------------------- sound for world.
+        // -------------------------------------------------------- sound for world
 
-        let sound = self.sound.as_ref().expect("failed to find sound player");
+        let Some(sound) = self.sound.as_ref() else {
+            return Err(anyhow::anyhow!("failed to find sound player"));
+        };
 
-        // -------------------------------------------------------- update world.
+        // -------------------------------------------------------- update world
 
-        self.world
-            .update(&input_state, sound, dt)
-            .expect("failed to update world");
+        self.world.update(&input_state, sound, dt)?;
 
-        // -------------------------------------------------------- update renderer.
+        // -------------------------------------------------------- update renderer
 
-        let renderer = self.renderer.as_mut().expect("failed to find renderer");
+        let Some(renderer) = self.renderer.as_mut() else {
+            return Err(anyhow::anyhow!("failed to find renderer"));
+        };
 
         let instances = self.world.update_instances();
 
         renderer.update(instances);
         renderer.get_window().request_redraw();
+
+        Ok(())
     }
 }

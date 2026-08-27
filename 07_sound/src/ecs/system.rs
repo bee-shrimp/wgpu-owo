@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Context, Result};
+use anyhow::{Ok, Result};
 
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
@@ -14,9 +14,15 @@ use crate::sound::SoundPlayer;
 use crate::sprite::SpriteData;
 use crate::world::WorldData;
 
+enum GameEvent {
+    Spawn,
+    Despawn,
+    None,
+}
+
 // ---------------------------------------------------------------- systems storage
 
-pub struct Systems {}
+pub struct Systems;
 
 impl Systems {
     pub fn init(world: &mut WorldData) -> Result<()> {
@@ -32,8 +38,8 @@ impl Systems {
             &mut world.components,
             center,
             AnimationId::new(0),
-        )
-        .context("failed to create entity")?;
+        )?;
+
         Ok(())
     }
 
@@ -45,12 +51,13 @@ impl Systems {
     ) -> Result<()> {
         AnimationSystem::update(world, dt)?;
 
-        let create_triggered = CreateEntitySystem::update(world, input)?;
-        let kill_triggered = KillEntitySystem::update(world, input)?;
+        if let GameEvent::Spawn = CreateEntitySystem::update(world, input)? {
+            SoundSystem::play_spawn(sound)?;
+        };
 
-        if create_triggered == Some(true) || kill_triggered == Some(true) {
-            SoundSystem::play(input, sound)?;
-        }
+        if let GameEvent::Despawn = KillEntitySystem::update(world, input)? {
+            SoundSystem::play_despawn(sound)?;
+        };
 
         Ok(())
     }
@@ -64,15 +71,12 @@ impl Systems {
 
 struct SoundSystem;
 impl SoundSystem {
-    fn play(input: &InputState, sound: &SoundPlayer) -> Result<()> {
-        if input.left_click.is_some() {
-            sound.play_spawn()?;
-        }
+    fn play_spawn(sound: &SoundPlayer) -> Result<()> {
+        sound.play_spawn()
+    }
 
-        if input.right_click.is_some() {
-            sound.play_despawn()?;
-        }
-        Ok(())
+    fn play_despawn(sound: &SoundPlayer) -> Result<()> {
+        sound.play_despawn()
     }
 }
 
@@ -110,9 +114,9 @@ impl AnimationSystem {
 pub struct CreateEntitySystem {}
 
 impl CreateEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<bool>> {
+    fn update(world: &mut WorldData, input: &InputState) -> Result<GameEvent> {
         let Some(pos) = input.left_click else {
-            return Ok(None);
+            return Ok(GameEvent::None);
         };
 
         create_entity_with_pos(
@@ -121,7 +125,6 @@ impl CreateEntitySystem {
             pos,
             AnimationId::new(1),
         )
-        .context("failed to create entity")
     }
 }
 fn create_entity_with_pos(
@@ -129,9 +132,9 @@ fn create_entity_with_pos(
     components: &mut Components,
     pos: Pos,
     anim_id: AnimationId,
-) -> Result<Option<bool>> {
+) -> Result<GameEvent> {
     let Some(entity) = entity_manager.spawn() else {
-        return Ok(None);
+        return Ok(GameEvent::None);
     };
 
     components.positions.insert(entity, pos)?;
@@ -152,9 +155,8 @@ fn create_entity_with_pos(
             id: u8::try_from(anim_id.index)?,
         },
     )?;
-    let triggered = true;
 
-    Ok(Some(triggered))
+    Ok(GameEvent::Spawn)
 }
 
 // /// adds data to `ComponentStorage`[[entity.index]].
@@ -214,9 +216,9 @@ fn create_entity_with_pos(
 pub struct KillEntitySystem {}
 
 impl KillEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<bool>> {
+    fn update(world: &mut WorldData, input: &InputState) -> Result<GameEvent> {
         let Some(pos) = input.right_click else {
-            return Ok(None);
+            return Ok(GameEvent::None);
         };
 
         world.update_targets.clear();
@@ -238,18 +240,17 @@ fn kill_entity_with_pos(
     components: &mut Components,
     entities_with_pos_and_size: &[Entity],
     click_pos: Pos,
-) -> Result<Option<bool>> {
+) -> Result<GameEvent> {
     for entity in entities_with_pos_and_size {
         let entity = *entity;
 
-        let pos = components
-            .positions
-            .get(entity)
-            .context("kill entity system: failed to get pos")?;
-        let size = components
-            .sizes
-            .get(entity)
-            .context("kill entity system: failed to get pos")?;
+        let Some(pos) = components.positions.get(entity) else {
+            continue;
+        };
+
+        let Some(size) = components.sizes.get(entity) else {
+            continue;
+        };
 
         if click_pos.x >= pos.x
             && pos.x + size.w >= click_pos.x
@@ -260,12 +261,10 @@ fn kill_entity_with_pos(
             components.positions.remove(entity)?;
             components.sizes.remove(entity)?;
             components.animations.remove(entity)?;
+            return Ok(GameEvent::Despawn);
         }
     }
-
-    let triggered = true;
-
-    Ok(Some(triggered))
+    Ok(GameEvent::None)
 }
 
 // ---------------------------------------------------------------- instance update system
