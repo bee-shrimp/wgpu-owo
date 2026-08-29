@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Ok, Result};
+use anyhow::Result;
 
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{Components, Pos, Size};
@@ -17,7 +17,6 @@ use crate::world::WorldData;
 enum GameEvent {
     Spawn,
     Despawn,
-    None,
 }
 
 // ---------------------------------------------------------------- systems storage
@@ -51,11 +50,11 @@ impl Systems {
     ) -> Result<()> {
         AnimationSystem::update(world, dt)?;
 
-        if let GameEvent::Spawn = CreateEntitySystem::update(world, input)? {
+        if let Some(GameEvent::Spawn) = CreateEntitySystem::update(world, input)? {
             SoundSystem::play_spawn(sound)?;
         };
 
-        if let GameEvent::Despawn = KillEntitySystem::update(world, input)? {
+        if let Some(GameEvent::Despawn) = KillEntitySystem::update(world, input)? {
             SoundSystem::play_despawn(sound)?;
         };
 
@@ -114,9 +113,9 @@ impl AnimationSystem {
 pub struct CreateEntitySystem {}
 
 impl CreateEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Result<GameEvent> {
+    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<GameEvent>> {
         let Some(pos) = input.left_click else {
-            return Ok(GameEvent::None);
+            return Ok(None);
         };
 
         create_entity_with_pos(
@@ -132,9 +131,9 @@ fn create_entity_with_pos(
     components: &mut Components,
     pos: Pos,
     anim_id: AnimationId,
-) -> Result<GameEvent> {
+) -> Result<Option<GameEvent>> {
     let Some(entity) = entity_manager.spawn() else {
-        return Ok(GameEvent::None);
+        return Ok(None);
     };
 
     components.positions.insert(entity, pos)?;
@@ -156,7 +155,7 @@ fn create_entity_with_pos(
         },
     )?;
 
-    Ok(GameEvent::Spawn)
+    Ok(Some(GameEvent::Spawn))
 }
 
 // /// adds data to `ComponentStorage`[[entity.index]].
@@ -216,9 +215,9 @@ fn create_entity_with_pos(
 pub struct KillEntitySystem {}
 
 impl KillEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Result<GameEvent> {
+    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<GameEvent>> {
         let Some(pos) = input.right_click else {
-            return Ok(GameEvent::None);
+            return Ok(None);
         };
 
         world.update_targets.clear();
@@ -240,7 +239,7 @@ fn kill_entity_with_pos(
     components: &mut Components,
     entities_with_pos_and_size: &[Entity],
     click_pos: Pos,
-) -> Result<GameEvent> {
+) -> Result<Option<GameEvent>> {
     for entity in entities_with_pos_and_size {
         let entity = *entity;
 
@@ -261,10 +260,10 @@ fn kill_entity_with_pos(
             components.positions.remove(entity)?;
             components.sizes.remove(entity)?;
             components.animations.remove(entity)?;
-            return Ok(GameEvent::Despawn);
+            return Ok(Some(GameEvent::Despawn));
         }
     }
-    Ok(GameEvent::None)
+    Ok(None)
 }
 
 // ---------------------------------------------------------------- instance update system
