@@ -31,7 +31,8 @@ fn main() -> Result<()> {
     event_loop.run_app(&mut app)?;
 
     if let Some(err) = app.take_error() {
-        eprintln!("{err:#}");
+        // eprintln!("{err:#}");
+        log::error!("{err}");
     }
 
     Ok(())

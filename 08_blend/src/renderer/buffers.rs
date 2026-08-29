@@ -38,6 +38,7 @@ impl Vertex {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBS,
         })
+        // Err(anyhow::anyhow!("vertex desc err test"))
     }
 }
 

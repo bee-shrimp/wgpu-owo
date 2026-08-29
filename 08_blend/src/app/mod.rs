@@ -1,8 +1,9 @@
 // ---------------------------------------------------------------- App struct
+use anyhow::{Context, Error, Result};
+
 use std::sync::Arc;
 use std::time::Instant;
 
-use anyhow::{Context, Error, Result};
 use winit::{
     application::ApplicationHandler,
     event::{ElementState, KeyEvent, WindowEvent},
@@ -12,13 +13,11 @@ use winit::{
 };
 
 use crate::renderer::Renderer;
-
+use crate::sound::SoundPlayer;
 use crate::world::World;
 
 pub mod input;
 use input::InputHandler;
-
-use crate::sound::SoundPlayer;
 
 // ---------------------------------------------------------------- App struct
 
@@ -35,8 +34,7 @@ pub struct App {
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if let Err(err) = self.init(event_loop) {
-            self.error = Some(err);
-            event_loop.exit();
+            self.fail(event_loop, err);
         }
     }
 
@@ -66,9 +64,8 @@ impl ApplicationHandler for App {
             //
             WindowEvent::RedrawRequested => match renderer.render() {
                 Ok(()) => {}
-                Err(e) => {
-                    log::error!("{e}");
-                    event_loop.exit();
+                Err(err) => {
+                    self.fail(event_loop, err);
                 }
             },
 
@@ -109,14 +106,18 @@ impl ApplicationHandler for App {
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         // -------------------------------------------------------- error handling
         if let Err(err) = self.update(event_loop) {
-            self.error = Some(err);
-            event_loop.exit();
+            self.fail(event_loop, err);
         }
     }
 }
 
 impl App {
-    pub const fn take_error(&mut self) -> Option<Error> {
+    fn fail(&mut self, event_loop: &ActiveEventLoop, err: Error) {
+        self.error = Some(err);
+        event_loop.exit();
+    }
+
+    pub fn take_error(&mut self) -> Option<Error> {
         self.error.take()
     }
 
@@ -143,10 +144,8 @@ impl App {
 
         // -------------------------------------------------------- create renderer/sound player
 
-        let (renderer, sound_player) = smol::block_on(smol::future::zip(
-            Renderer::new(window, event_loop, instances),
-            SoundPlayer::new(),
-        ));
+        let renderer = smol::block_on(Renderer::new(window, event_loop, instances));
+        let sound_player = smol::block_on(SoundPlayer::new());
 
         self.renderer = Some(renderer.context("failed to create renderer")?);
         self.sound = Some(sound_player.context("failed to create sound player")?);
@@ -200,18 +199,20 @@ impl App {
         // -------------------------------------------------------- get input state
 
         let input_state = self.input.get_input_state();
-
         self.input.update_for_next_frame();
 
         // -------------------------------------------------------- sound for world
 
-        let Some(sound) = self.sound.as_ref() else {
+        let Some(sound) = self.sound.as_mut() else {
             return Err(anyhow::anyhow!("failed to find sound player"));
         };
 
         // -------------------------------------------------------- update world
 
-        self.world.update(&input_state, sound, dt)?;
+        self.world
+            .update(&input_state, sound, dt)
+            .context("failed to update world")?;
+        let instances = self.world.update_instances();
 
         // -------------------------------------------------------- update renderer
 
@@ -219,9 +220,9 @@ impl App {
             return Err(anyhow::anyhow!("failed to find renderer"));
         };
 
-        let instances = self.world.update_instances();
-
-        renderer.update(instances)?;
+        renderer
+            .update(instances)
+            .context("failed to update renderer")?;
         renderer.get_window().request_redraw();
 
         Ok(())

@@ -3,7 +3,7 @@
 use anyhow::Result;
 
 use crate::ecs::entity::{Entity, EntityManager};
-use crate::ecs::{Components, Pos, Size};
+use crate::ecs::{Components, Pos, Query, Size};
 
 use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
@@ -14,17 +14,31 @@ use crate::sound::SoundPlayer;
 use crate::sprite::SpriteData;
 use crate::world::WorldData;
 
+#[derive(Debug, Clone, Copy)]
+enum Command {
+    Despawn(Entity),
+}
+
+#[derive(Debug, Clone, Copy)]
 enum GameEvent {
     Spawn,
-    Despawn,
 }
 
 // ---------------------------------------------------------------- systems storage
 
-pub struct Systems;
+pub struct Systems {
+    commands: Vec<Command>,
+}
+impl Default for Systems {
+    fn default() -> Self {
+        Self {
+            commands: Vec::new(),
+        }
+    }
+}
 
 impl Systems {
-    pub fn init(world: &mut WorldData) -> Result<()> {
+    pub fn init(&self, world: &mut WorldData) -> Result<()> {
         init_animation_registry(&mut world.anim_registry)?;
 
         let center = Pos {
@@ -37,12 +51,14 @@ impl Systems {
             &mut world.components,
             center,
             AnimationId::new(0),
-        )?;
+        )
+        .ok_or(anyhow::anyhow!("failed create first entity"))?;
 
         Ok(())
     }
 
     pub fn update(
+        &mut self,
         world: &mut WorldData,
         input: &InputState,
         sound: &SoundPlayer,
@@ -51,16 +67,22 @@ impl Systems {
         AnimationSystem::update(world, dt)?;
 
         if matches!(
-            CreateEntitySystem::update(world, input)?,
+            CreateEntitySystem::update(world, input),
             Some(GameEvent::Spawn)
         ) {
             SoundSystem::play_spawn(sound)?;
         }
 
-        if matches!(
-            KillEntitySystem::update(world, input)?,
-            Some(GameEvent::Despawn)
-        ) {
+        let kill_query = world.query::<(Entity, &Pos, &Size)>();
+        if let Some(command) = KillEntitySystem::update(kill_query, input) {
+            match command {
+                Command::Despawn(entity) => {
+                    world.entity_manager.despawn(entity)?;
+                    world.components.positions.remove(entity)?;
+                    world.components.sizes.remove(entity)?;
+                    world.components.animations.remove(entity)?;
+                }
+            }
             SoundSystem::play_despawn(sound)?;
         }
 
@@ -116,12 +138,12 @@ impl AnimationSystem {
 
 // ---------------------------------------------------------------- create entity system
 
-pub struct CreateEntitySystem {}
+pub struct CreateEntitySystem;
 
 impl CreateEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<GameEvent>> {
+    fn update(world: &mut WorldData, input: &InputState) -> Option<GameEvent> {
         let Some(pos) = input.left_click else {
-            return Ok(None);
+            return None;
         };
 
         create_entity_with_pos(
@@ -137,139 +159,78 @@ fn create_entity_with_pos(
     components: &mut Components,
     pos: Pos,
     anim_id: AnimationId,
-) -> Result<Option<GameEvent>> {
+) -> Option<GameEvent> {
     let Some(entity) = entity_manager.spawn() else {
-        return Ok(None);
+        return None;
     };
 
-    components.positions.insert(entity, pos)?;
+    components.positions.insert(entity, pos).ok()?;
 
-    components.sizes.insert(
-        entity,
-        Size {
-            w: f32::from(RECT_WIDTH),
-            h: f32::from(RECT_HEIGHT),
-        },
-    )?;
+    components
+        .sizes
+        .insert(
+            entity,
+            Size {
+                w: f32::from(RECT_WIDTH),
+                h: f32::from(RECT_HEIGHT),
+            },
+        )
+        .ok()?;
 
-    components.animations.insert(
-        entity,
-        AnimationState {
-            current_frame: 0,
-            elapsed: 0.0,
-            id: u8::try_from(anim_id.index)?,
-        },
-    )?;
+    components
+        .animations
+        .insert(
+            entity,
+            AnimationState {
+                current_frame: 0,
+                elapsed: 0.0,
+                id: u8::try_from(anim_id.index).ok()?,
+            },
+        )
+        .ok()?;
 
-    Ok(Some(GameEvent::Spawn))
+    Some(GameEvent::Spawn)
 }
 
-// /// adds data to `ComponentStorage`[[entity.index]].
-// /// uses `MAX_ENTITIES` to determine the number of entities.
-// pub fn create_grid_entities(
-//     entity_manager: &mut EntityManager,
-//     components: &mut Components,
-//     // sprite: Sprite,
-//     anim_id: AnimationId,
-// ) -> Result<()> {
-//     use config::MAX_COL;
-//     for _ in 0..MAX_ENTITIES {
-//         let entity = entity_manager.spawn().context("no free slot")?;
-//
-//         components
-//             .positions
-//             .insert(
-//                 entity,
-//                 Pos {
-//                     x: f32::from(RECT_WIDTH * (entity.index as u8 % MAX_COL)),
-//                     y: f32::from(RECT_HEIGHT * (entity.index as u8 / MAX_COL)),
-//                 },
-//             )
-//             .context("failed to add position")?;
-//
-//         components
-//             .sizes
-//             .insert(
-//                 entity,
-//                 Size {
-//                     w: f32::from(RECT_WIDTH),
-//                     h: f32::from(RECT_HEIGHT),
-//                 },
-//             )
-//             .context("failed to add size")?;
-//
-//         // components
-//         //     .sprites
-//         //     .insert(entity, sprite)
-//         //     .context("failed to add sprite data")?;
-//
-//         components
-//             .animations
-//             .insert(
-//                 entity,
-//                 AnimationState {
-//                     current_frame: 0,
-//                     elapsed: 0.0,
-//                     id: anim_id.index as u8,
-//                 },
-//             )
-//             .context("failed to add animation")?;
-//     }
-//     Ok(())
-// }
+// ---------------------------------------------------------------- kill entity system
 
-pub struct KillEntitySystem {}
+pub struct KillEntitySystem;
 
 impl KillEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Result<Option<GameEvent>> {
-        let Some(pos) = input.right_click else {
-            return Ok(None);
+    fn update(query: Query<'_, (Entity, &Pos, &Size)>, input: &InputState) -> Option<Command> {
+        let Some(click_pos) = input.right_click else {
+            return None;
         };
 
-        world.update_targets.clear();
-        world
-            .update_targets
-            .extend(world.components.with_pos_and_size());
+        query
+            .iter()
+            .find_map(|i| kill_entity_with_pos(i.0, i.1, i.2, click_pos))
+        // {
+        //     let killed = kill_entity_with_pos(i.0, i.1, i.2, click_pos);
+        //     if killed.is_some() {
+        //         return killed;
+        //     } else {
+        //         return None;
+        //     }
 
-        kill_entity_with_pos(
-            &mut world.entity_manager,
-            &mut world.components,
-            &world.update_targets,
-            pos,
-        )
+        //     kill_entity_with_pok(
+        //     &mut world.entity_manager,
+        //     &mut world.components,
+        //     &world.update_targets,
+        //     pos,
+        // )
     }
 }
 
-fn kill_entity_with_pos(
-    entity_manager: &mut EntityManager,
-    components: &mut Components,
-    entities_with_pos_and_size: &[Entity],
-    click_pos: Pos,
-) -> Result<Option<GameEvent>> {
-    for entity in entities_with_pos_and_size {
-        let entity = *entity;
-
-        let Some(pos) = components.positions.get(entity) else {
-            continue;
-        };
-
-        let Some(size) = components.sizes.get(entity) else {
-            continue;
-        };
-
-        if click_pos.x >= pos.x
-            && pos.x + size.w >= click_pos.x
-            && click_pos.y >= pos.y
-            && pos.y + size.h >= click_pos.y
-        {
-            entity_manager.despawn(entity)?;
-            components.positions.remove(entity)?;
-            components.sizes.remove(entity)?;
-            components.animations.remove(entity)?;
-            return Ok(Some(GameEvent::Despawn));
-        }
+fn kill_entity_with_pos(entity: Entity, pos: &Pos, size: &Size, click_pos: Pos) -> Option<Command> {
+    if click_pos.x >= pos.x
+        && pos.x + size.w >= click_pos.x
+        && click_pos.y >= pos.y
+        && pos.y + size.h >= click_pos.y
+    {
+        return Some(Command::Despawn(entity));
     }
-    Ok(None)
+    None
 }
 
 // ---------------------------------------------------------------- instance update system
@@ -324,34 +285,3 @@ fn build_instance_data(
         sprite_size: [sprite_data.uv_size.w, sprite_data.uv_size.h],
     })
 }
-
-// ---------------------------------------------------------------- toggle sprite system
-
-// pub struct ToggleSpriteSystem;
-//
-// impl ToggleSpriteSystem {
-//     /// toggle sprite of clicked position.
-//     pub fn update(components: &mut Components, click_pos: Pos) -> Result<()> {
-//         let gx = (click_pos.x / f32::from(RECT_WIDTH)).floor() as u8;
-//         let gy = (click_pos.y / f32::from(RECT_HEIGHT)).floor() as u8;
-//
-//         let idx = usize::from(gy * MAX_COL + gx);
-//
-//         let sprite = components
-//             .sprites
-//             .get(Entity::new(idx))
-//             .context("failed to get sprite")?;
-//
-//         let new_sprite = match sprite {
-//             Sprite::RedFlower => Sprite::YellowFlower,
-//             Sprite::YellowFlower => Sprite::RedFlower,
-//         };
-//
-//         *components
-//             .sprites
-//             .get_mut(Entity::new(idx))
-//             .context("failed to get sprite mut")? = new_sprite;
-//
-//         Ok(())
-//     }
-// }

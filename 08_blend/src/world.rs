@@ -6,11 +6,13 @@ use crate::config::MAX_ENTITIES;
 
 use crate::animation::AnimationRegistry;
 
-use crate::ecs::{ComponentStorage, Components, Entity, EntityManager, Systems};
+use crate::ecs::{ComponentStorage, Components, Entity, EntityManager, Query, QuerySpec, Systems};
 use crate::renderer::InstanceData;
 
 use crate::app::input::InputState;
 use crate::sound::SoundPlayer;
+
+// ---------------------------------------------------------------- world data struct
 
 pub struct WorldData {
     pub entity_manager: EntityManager,
@@ -19,6 +21,7 @@ pub struct WorldData {
     pub instances: Vec<InstanceData>,
     pub anim_registry: AnimationRegistry,
 }
+
 impl Default for WorldData {
     fn default() -> Self {
         Self {
@@ -34,11 +37,19 @@ impl Default for WorldData {
         }
     }
 }
+/// example
+/// `let query = world.query::<(&Pos,)>();`
+impl WorldData {
+    pub fn query<Q: QuerySpec>(&self) -> Query<'_, Q> {
+        Query::new(&self.components)
+    }
+}
 
 // ---------------------------------------------------------------- world struct
 
 pub struct World {
     data: WorldData,
+    systems: Systems,
     is_running: bool,
 }
 
@@ -49,6 +60,7 @@ impl Default for World {
     fn default() -> Self {
         Self {
             data: WorldData::default(),
+            systems: Systems::default(),
             is_running: true,
         }
     }
@@ -57,14 +69,14 @@ impl Default for World {
 impl World {
     /// initialises world with entities.
     pub fn init(&mut self) -> Result<()> {
-        Systems::init(&mut self.data)?;
+        self.systems.init(&mut self.data)?;
         self.update_instances();
         Ok(())
     }
 
     /// updates components.
     pub fn update(&mut self, input: &InputState, sound: &SoundPlayer, dt: f32) -> Result<()> {
-        Systems::update(&mut self.data, input, sound, dt)?;
+        self.systems.update(&mut self.data, input, sound, dt)?;
 
         Ok(())
     }
@@ -77,12 +89,12 @@ impl World {
     }
 
     /// pause/unpause.
-    pub const fn toggle_running(&mut self) {
+    pub fn toggle_running(&mut self) {
         self.is_running = !self.is_running;
     }
 
     /// return if paused.
-    pub const fn is_running(&self) -> bool {
+    pub fn is_running(&self) -> bool {
         self.is_running
     }
 }

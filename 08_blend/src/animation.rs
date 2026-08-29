@@ -62,14 +62,14 @@ struct FrameStorage {
 }
 
 impl FrameStorage {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             frames: [GridPos { gx: 0, gy: 0 }; MAX_TOTAL_FRAMES],
             count: 0,
         }
     }
     /// returns index and size of the animation in frame srorage array.
-    pub const fn allocate(&mut self, frame_count: usize) -> Option<(usize, usize)> {
+    pub fn allocate(&mut self, frame_count: usize) -> Option<(usize, usize)> {
         if self.count + frame_count > MAX_TOTAL_FRAMES {
             return None;
         }
@@ -106,7 +106,7 @@ pub struct AnimationRegistry {
 }
 
 impl AnimationRegistry {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             definitions: [AnimationDef {
                 frame_offset: 0,

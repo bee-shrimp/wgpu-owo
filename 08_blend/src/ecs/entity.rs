@@ -57,7 +57,7 @@ impl EntityManager {
     /// stores id for reuse
     pub fn despawn(&mut self, entity: Entity) -> Result<()> {
         if entity.index >= MAX_ENTITIES {
-            anyhow::bail!("invalid entity id");
+            anyhow::bail!("entity id is too big");
         }
         self.free_list.push(entity.index);
         Ok(())

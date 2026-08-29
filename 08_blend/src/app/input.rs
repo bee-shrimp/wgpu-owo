@@ -58,7 +58,7 @@ impl InputHandler {
     }
 
     /// updates window size.
-    pub const fn resize(&mut self, window_size: PhysicalSize<u32>) {
+    pub fn resize(&mut self, window_size: PhysicalSize<u32>) {
         self.window_size = window_size;
     }
 
@@ -85,7 +85,7 @@ impl InputHandler {
     }
 
     /// updates `InputHandler.cursor_pos`.
-    pub const fn update_cursor_pos(&mut self, pos: PhysicalPosition<f64>) {
+    pub fn update_cursor_pos(&mut self, pos: PhysicalPosition<f64>) {
         self.now_cursor_pos = pos;
     }
 
@@ -105,7 +105,7 @@ impl InputHandler {
         }
     }
 
-    pub const fn update_for_next_frame(&mut self) {
+    pub fn update_for_next_frame(&mut self) {
         // self.prev_keys.copy_from_slice(&self.now_keys);
         self.prev_mouse.copy_from_slice(&self.now_mouse);
         // self.prev_cursor_pos = self.now_cursor_pos;
@@ -141,7 +141,7 @@ impl InputHandler {
 }
 
 /// maps `MouseButton` to usize.
-const fn mouse_button_to_usize(button: MouseButton) -> usize {
+fn mouse_button_to_usize(button: MouseButton) -> usize {
     match button {
         MouseButton::Left => 0,
         MouseButton::Right => 1,

@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------- imports
+use anyhow::Result;
 
 use crate::animation::AnimationState;
 use crate::config::MAX_ENTITIES;
 use crate::ecs::entity::Entity;
-use anyhow::Result;
 
 // ---------------------------------------------------------------- struct for rects
 
@@ -21,6 +21,7 @@ pub struct Size {
 
 // ---------------------------------------------------------------- components struct for world
 
+#[derive(Debug, Clone, Copy)]
 pub struct Components {
     pub positions: ComponentStorage<Pos>,
     pub sizes: ComponentStorage<Size>,
@@ -33,13 +34,6 @@ impl Components {
             .map(Entity::new)
     }
 
-    pub fn with_pos_and_size(&self) -> impl Iterator<Item = Entity> {
-        (0..MAX_ENTITIES)
-            .filter(move |&i| self.positions.alive.get(i).is_some_and(|state| *state))
-            .filter(move |&i| self.sizes.alive.get(i).is_some_and(|state| *state))
-            .map(Entity::new)
-    }
-
     pub fn with_animation_state(&self) -> impl Iterator<Item = Entity> {
         (0..MAX_ENTITIES)
             .filter(move |&i| self.animations.alive.get(i).is_some_and(|state| *state))
@@ -49,9 +43,10 @@ impl Components {
 
 // ---------------------------------------------------------------- component storage
 
+#[derive(Debug, Clone, Copy)]
 pub struct ComponentStorage<T> {
     components: [T; MAX_ENTITIES],
-    alive: [bool; MAX_ENTITIES],
+    pub alive: [bool; MAX_ENTITIES],
 }
 
 impl<T: Default> ComponentStorage<T> {
