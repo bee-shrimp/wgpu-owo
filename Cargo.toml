@@ -1,5 +1,5 @@
 [workspace]
-members = ["00_time", "01_space", "02_instances", "03_grid", "04_sprites", "05_animation", "06_death", "07_sound"]
+members = ["00_time", "01_space", "02_instances", "03_grid", "04_sprites", "05_animation", "06_death", "07_sound", "08_blend"]
 
 resolver = "3"
 
@@ -16,6 +16,7 @@ resolver = "3"
 pedantic = { level = "deny", priority = -1 }
 nursery = { level = "deny", priority = -1 }
 unwrap_used = "deny"
+expect_used = "deny"
 unreachable = "deny"
 unimplemented = "deny"
 unchecked_time_subtraction = "deny"
@@ -24,13 +25,12 @@ panic_in_result_fn = "deny"
 panic = "deny"
 exit = "deny"
 
-missing_const_for_fn ="allow"
-cast_possible_truncation = "allow"
-cast_precision_loss= "allow"
-cast_sign_loss = "allow"
+# missing_const_for_fn ="allow"
+# cast_possible_truncation = "allow"
+# cast_precision_loss= "allow"
+# cast_sign_loss = "allow"
 future_not_send = "allow"
 
-# expect_used = "deny"
 # as_conversions = "deny"
 # indexing_slicing = "deny"
 # arithmetic_side_effects = "deny"

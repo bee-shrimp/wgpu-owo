@@ -467,6 +467,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "blend"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-fs",
+ "bytemuck",
+ "env_logger",
+ "glam",
+ "image",
+ "log",
+ "pollster",
+ "rodio",
+ "smol",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "block2"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
