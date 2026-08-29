@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------- imports
 
+use anyhow::{Ok, Result};
 use std::mem;
 use wgpu::util::DeviceExt;
 
@@ -31,12 +32,12 @@ impl Vertex {
         wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2];
     // 0 => Vertex::position, 1 => Vertex::uv
 
-    pub const fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+    pub fn desc() -> Result<wgpu::VertexBufferLayout<'static>> {
+        Ok(wgpu::VertexBufferLayout {
+            array_stride: wgpu::BufferAddress::try_from(mem::size_of::<Self>())?,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBS,
-        }
+        })
     }
 }
 
@@ -98,12 +99,12 @@ impl InstanceData {
         wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x2, 4 => Float32x2, 5 => Float32x2];
     // 2 => InstanceData::position, 3 => InstanceData::size, 4 => sprite_offset, 5 => sprite_size
 
-    pub const fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+    pub fn desc() -> Result<wgpu::VertexBufferLayout<'static>> {
+        Ok(wgpu::VertexBufferLayout {
+            array_stride: u64::try_from(mem::size_of::<Self>())?,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &Self::ATTRIBS,
-        }
+        })
     }
 }
 
@@ -146,13 +147,13 @@ pub fn create_vertex_buffer(
 
 // ---------------------------------------------------------------- instance buffer
 
-pub fn create_instance_buffer(device: &wgpu::Device) -> wgpu::Buffer {
-    device.create_buffer(&wgpu::wgt::BufferDescriptor {
+pub fn create_instance_buffer(device: &wgpu::Device) -> Result<wgpu::Buffer> {
+    Ok(device.create_buffer(&wgpu::wgt::BufferDescriptor {
         label: Some("instance buffer"),
-        size: (MAX_ENTITIES as u64 * std::mem::size_of::<InstanceData>() as u64),
+        size: (u64::try_from(MAX_ENTITIES)? * u64::try_from(std::mem::size_of::<InstanceData>())?),
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
-    })
+    }))
 }
 
 // ---------------------------------------------------------------- index buffer

@@ -26,7 +26,7 @@ pub struct UVOffset {
     pub v: f32,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct GridPos {
     pub gx: u8,
     pub gy: u8,

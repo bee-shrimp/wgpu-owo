@@ -15,8 +15,6 @@ use crate::renderer::Renderer;
 
 use crate::world::World;
 
-use crate::ecs::{Pos, Size};
-
 pub mod input;
 use input::InputHandler;
 
@@ -39,7 +37,7 @@ impl ApplicationHandler for App {
         if let Err(err) = self.init(event_loop) {
             self.error = Some(err);
             event_loop.exit();
-        };
+        }
     }
 
     // ------------------------------------------------------------ handle window events
@@ -61,16 +59,13 @@ impl ApplicationHandler for App {
             //
             WindowEvent::Resized(size) => {
                 renderer.resize(size.width, size.height);
-                self.input.resize(Size {
-                    w: size.width as f32,
-                    h: size.height as f32,
-                });
+                self.input.resize(size);
             }
 
             // ---------------------------------------------------- redraw
             //
             WindowEvent::RedrawRequested => match renderer.render() {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(e) => {
                     log::error!("{e}");
                     event_loop.exit();
@@ -80,10 +75,7 @@ impl ApplicationHandler for App {
             // ---------------------------------------------------- detect cursor position
             //
             WindowEvent::CursorMoved { position, .. } => {
-                self.input.update_cursor_pos(Pos {
-                    x: position.x as f32,
-                    y: position.y as f32,
-                });
+                self.input.update_cursor_pos(position);
             }
 
             // ---------------------------------------------------- handle mouse inputs
@@ -119,12 +111,12 @@ impl ApplicationHandler for App {
         if let Err(err) = self.update(event_loop) {
             self.error = Some(err);
             event_loop.exit();
-        };
+        }
     }
 }
 
 impl App {
-    pub fn take_error(&mut self) -> Option<Error> {
+    pub const fn take_error(&mut self) -> Option<Error> {
         self.error.take()
     }
 
@@ -147,10 +139,7 @@ impl App {
 
         let window_size = window.inner_size();
 
-        self.input = InputHandler::new(Size {
-            w: window_size.width as f32,
-            h: window_size.height as f32,
-        });
+        self.input = InputHandler::new(window_size);
 
         // -------------------------------------------------------- create renderer/sound player
 
@@ -167,7 +156,7 @@ impl App {
         self.renderer
             .as_mut()
             .context("failed to find renderer")?
-            .update(instances);
+            .update(instances)?;
 
         // -------------------------------------------------------- init other fields
 
@@ -232,7 +221,7 @@ impl App {
 
         let instances = self.world.update_instances();
 
-        renderer.update(instances);
+        renderer.update(instances)?;
         renderer.get_window().request_redraw();
 
         Ok(())

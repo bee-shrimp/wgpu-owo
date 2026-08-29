@@ -1,10 +1,14 @@
 // ---------------------------------------------------------------- imports
 
-use winit::{event::MouseButton, keyboard::KeyCode};
+use winit::{
+    dpi::{PhysicalPosition, PhysicalSize},
+    event::MouseButton,
+    keyboard::KeyCode,
+};
 
 use crate::{
     config::{LOGIC_HEIGHT, LOGIC_WIDTH},
-    ecs::{Pos, Size},
+    ecs::Pos,
 };
 
 const KEY_COUNT: usize = 255;
@@ -23,8 +27,8 @@ pub struct InputHandler {
     // prev_keys: [bool; KEY_COUNT],
     now_mouse: [bool; MOUSE_BUTTONS],
     prev_mouse: [bool; MOUSE_BUTTONS],
-    now_cursor_pos: Pos,
-    window_size: Size,
+    now_cursor_pos: PhysicalPosition<f64>,
+    window_size: PhysicalSize<u32>,
 }
 
 impl Default for InputHandler {
@@ -35,9 +39,9 @@ impl Default for InputHandler {
             now_mouse: [false; MOUSE_BUTTONS],
             prev_mouse: [false; MOUSE_BUTTONS],
 
-            now_cursor_pos: Pos::default(),
+            now_cursor_pos: PhysicalPosition::default(),
 
-            window_size: Size::default(),
+            window_size: PhysicalSize::default(),
         }
     }
 }
@@ -46,7 +50,7 @@ impl Default for InputHandler {
 
 impl InputHandler {
     /// creates new `InputHandler`.
-    pub fn new(window_size: Size) -> Self {
+    pub fn new(window_size: PhysicalSize<u32>) -> Self {
         Self {
             window_size,
             ..Default::default()
@@ -54,53 +58,54 @@ impl InputHandler {
     }
 
     /// updates window size.
-    pub fn resize(&mut self, window_size: Size) {
+    pub const fn resize(&mut self, window_size: PhysicalSize<u32>) {
         self.window_size = window_size;
     }
 
     /// adds keycode to `InputHandler.pressed_keys`.
+    #[allow(clippy::as_conversions)]
     pub fn insert_key(&mut self, code: KeyCode) {
-        self.now_keys[code as usize] = true;
+        if let Some(state) = self.now_keys.get_mut(code as usize) {
+            *state = true;
+        }
     }
 
     /// removes keycode from `InputHandler.pressed_keys`.
+    #[allow(clippy::as_conversions)]
     pub fn remove_key(&mut self, code: KeyCode) {
-        self.now_keys[code as usize] = false;
+        if let Some(state) = self.now_keys.get_mut(code as usize) {
+            *state = false;
+        }
     }
 
     /// returns if the keycode is in `InputHandler.pressed_keys`.
+    #[allow(clippy::as_conversions)]
     pub fn has_key(&self, code: KeyCode) -> bool {
-        self.now_keys[code as usize]
+        self.now_keys.get(code as usize).is_some_and(|state| *state)
     }
 
     /// updates `InputHandler.cursor_pos`.
-    pub fn update_cursor_pos(&mut self, pos: Pos) {
+    pub const fn update_cursor_pos(&mut self, pos: PhysicalPosition<f64>) {
         self.now_cursor_pos = pos;
     }
-
-    // /// detects if mouse has been clicked.
-    // pub fn update_mouse_state(&mut self) {
-    //     if self.has_triggered(MouseButton::Left) {
-    //         self.mouse_left.pos = cursor_pos_to_world_pos(self.window_size, self.cursor_pos);
-    //     }
-    //
-    //     self.mouse_left.was_pressed = self.mouse_left.is_pressed;
-    //
-    // }
 
     /// updates `MouseState`.
     pub fn button_pressed(&mut self, button: MouseButton) {
         let idx = mouse_button_to_usize(button);
-        self.now_mouse[idx] = true;
+        if let Some(state) = self.now_mouse.get_mut(idx) {
+            *state = true;
+        }
     }
 
     /// updates `MouseState`.
     pub fn button_released(&mut self, button: MouseButton) {
         let idx = mouse_button_to_usize(button);
-        self.now_mouse[idx] = false;
+        if let Some(state) = self.now_mouse.get_mut(idx) {
+            *state = false;
+        }
     }
 
-    pub fn update_for_next_frame(&mut self) {
+    pub const fn update_for_next_frame(&mut self) {
         // self.prev_keys.copy_from_slice(&self.now_keys);
         self.prev_mouse.copy_from_slice(&self.now_mouse);
         // self.prev_cursor_pos = self.now_cursor_pos;
@@ -108,8 +113,13 @@ impl InputHandler {
 
     // /// returns if mouse was clicked.
     pub fn has_triggered(&self, button: MouseButton) -> bool {
-        self.now_mouse[mouse_button_to_usize(button)]
-            && !self.prev_mouse[mouse_button_to_usize(button)]
+        self.now_mouse
+            .get(mouse_button_to_usize(button))
+            .is_some_and(|state| *state)
+            && self
+                .prev_mouse
+                .get(mouse_button_to_usize(button))
+                .is_some_and(|state| !*state)
     }
 
     /// returns click position.
@@ -131,7 +141,7 @@ impl InputHandler {
 }
 
 /// maps `MouseButton` to usize.
-fn mouse_button_to_usize(button: MouseButton) -> usize {
+const fn mouse_button_to_usize(button: MouseButton) -> usize {
     match button {
         MouseButton::Left => 0,
         MouseButton::Right => 1,
@@ -140,20 +150,33 @@ fn mouse_button_to_usize(button: MouseButton) -> usize {
     }
 }
 
+// allow as conversion with precision loss and truncation
+// since it's only used for ratio calculation.
 /// maps window coord to world coord.
-fn cursor_pos_to_world_pos(window_size: Size, cursor_pos: Pos) -> Option<Pos> {
-    let w_ratio = window_size.w / f32::from(LOGIC_WIDTH);
-    let h_ratio = window_size.h / f32::from(LOGIC_HEIGHT);
+#[allow(
+    clippy::as_conversions,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation
+)]
+fn cursor_pos_to_world_pos(
+    window_size: PhysicalSize<u32>,
+    cursor_pos: PhysicalPosition<f64>,
+) -> Option<Pos> {
+    let window_w = window_size.width as f32;
+    let window_h = window_size.height as f32;
+
+    let w_ratio = window_w / f32::from(LOGIC_WIDTH);
+    let h_ratio = window_h / f32::from(LOGIC_HEIGHT);
     let aspect_ratio = w_ratio.min(h_ratio);
 
     let world_width = f32::from(LOGIC_WIDTH) * aspect_ratio;
     let world_height = f32::from(LOGIC_HEIGHT) * aspect_ratio;
 
-    let offset_x = (window_size.w - world_width) / 2.0;
-    let offset_y = (window_size.h - world_height) / 2.0;
+    let offset_x = (window_w - world_width) / 2.0;
+    let offset_y = (window_h - world_height) / 2.0;
 
-    let cursor_x: f32 = cursor_pos.x;
-    let cursor_y: f32 = cursor_pos.y;
+    let cursor_x: f32 = cursor_pos.x as f32;
+    let cursor_y: f32 = cursor_pos.y as f32;
 
     if cursor_x <= offset_x
         || cursor_y <= offset_y

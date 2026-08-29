@@ -29,20 +29,20 @@ pub struct Components {
 impl Components {
     pub fn iter_alive(&self) -> impl Iterator<Item = Entity> {
         (0..MAX_ENTITIES)
-            .filter(move |&i| self.positions.alive[i])
+            .filter(move |&i| self.positions.alive.get(i).is_some_and(|state| *state))
             .map(Entity::new)
     }
 
     pub fn with_pos_and_size(&self) -> impl Iterator<Item = Entity> {
         (0..MAX_ENTITIES)
-            .filter(move |&i| self.positions.alive[i])
-            .filter(move |&i| self.sizes.alive[i])
+            .filter(move |&i| self.positions.alive.get(i).is_some_and(|state| *state))
+            .filter(move |&i| self.sizes.alive.get(i).is_some_and(|state| *state))
             .map(Entity::new)
     }
 
     pub fn with_animation_state(&self) -> impl Iterator<Item = Entity> {
         (0..MAX_ENTITIES)
-            .filter(move |&i| self.animations.alive[i])
+            .filter(move |&i| self.animations.alive.get(i).is_some_and(|state| *state))
             .map(Entity::new)
     }
 }
@@ -67,33 +67,48 @@ impl<T: Default> ComponentStorage<T> {
         if entity.index >= MAX_ENTITIES {
             anyhow::bail!("entity index out of bounds");
         }
-        self.components[entity.index] = component;
-        self.alive[entity.index] = true;
+
+        if let Some(slot) = self.components.get_mut(entity.index) {
+            *slot = component;
+        }
+
+        if let Some(slot) = self.alive.get_mut(entity.index) {
+            *slot = true;
+        }
+
         Ok(())
     }
 
     /// returns Some(&T) if entity is alive.
     pub fn get(&self, entity: Entity) -> Option<&T> {
-        if entity.index >= MAX_ENTITIES || !self.alive[entity.index] {
+        if entity.index >= MAX_ENTITIES || self.alive.get(entity.index).is_some_and(|state| !*state)
+        {
             return None;
         }
-        Some(&self.components[entity.index])
+
+        self.components.get(entity.index)
     }
 
     /// returns Some(&mut T) if entity is alive.
     pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
-        if entity.index >= MAX_ENTITIES || !self.alive[entity.index] {
+        if entity.index >= MAX_ENTITIES || self.alive.get(entity.index).is_some_and(|state| !*state)
+        {
             return None;
         }
-        Some(&mut self.components[entity.index])
+        self.components.get_mut(entity.index)
     }
 
     /// removes T from components array and kill entity(set alive == false).
     pub fn remove(&mut self, entity: Entity) -> Result<()> {
-        if entity.index >= MAX_ENTITIES || !self.alive[entity.index] {
+        if entity.index >= MAX_ENTITIES || self.alive.get(entity.index).is_some_and(|state| !*state)
+        {
             anyhow::bail!("entity not found");
         }
-        self.alive[entity.index] = false;
+
+        if let Some(state) = self.alive.get_mut(entity.index) {
+            *state = false;
+        }
+
         Ok(())
     }
 
@@ -112,4 +127,23 @@ impl<T: Default> ComponentStorage<T> {
     // pub fn count_alive(&self) -> usize {
     //     self.alive.iter().filter(|&&a| a).count()
     // }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn insert_and_get_component() {
+        let mut storage = ComponentStorage::<Pos>::new();
+        let entity = Entity::new(0);
+        let position = Pos { x: 10.0, y: 20.0 };
+
+        storage.insert(entity, position).unwrap();
+
+        let result = storage.get(entity).unwrap();
+
+        assert_eq!(result.x, 10.0);
+        assert_eq!(result.y, 20.0);
+    }
 }

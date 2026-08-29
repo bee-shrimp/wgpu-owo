@@ -12,7 +12,7 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn new(index: usize) -> Self {
+    pub const fn new(index: usize) -> Self {
         Self { index }
     }
 }

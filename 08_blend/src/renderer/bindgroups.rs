@@ -1,5 +1,5 @@
+#![allow(clippy::as_conversions)]
 // ---------------------------------------------------------------- imports
-
 use crate::renderer::buffers::Uniforms;
 
 // ---------------------------------------------------------------- functions to create bind group layout

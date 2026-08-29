@@ -79,13 +79,13 @@ impl FrameStorage {
     }
 
     /// returns `GridPos` of nth frame of the animation (`GridPos` stored at offset + frame).
-    pub fn get(&self, offset: usize, frame: usize) -> GridPos {
-        self.frames[offset + frame]
+    pub fn get(&self, offset: usize, frame: usize) -> Option<GridPos> {
+        self.frames.get(offset + frame).copied()
     }
 }
 
 /// static definition of animations.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct AnimationDef {
     /// address in `FrameStorage.frames`.
     pub frame_offset: usize,
@@ -106,7 +106,7 @@ pub struct AnimationRegistry {
 }
 
 impl AnimationRegistry {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             definitions: [AnimationDef {
                 frame_offset: 0,
@@ -124,25 +124,38 @@ impl AnimationRegistry {
             .allocate(frames.len())
             .context("failed to allocate in frame storage")?;
 
-        self.frame_storage.frames[offset..(frames.len() + offset)].copy_from_slice(frames);
+        if let Some(slots) = self
+            .frame_storage
+            .frames
+            .get_mut(offset..(frames.len() + offset))
+        {
+            slots.copy_from_slice(frames);
+        }
 
         let anim_id = AnimationId {
             index: self.anim_count,
         };
 
-        self.definitions[self.anim_count] = AnimationDef {
-            frame_offset: offset,
-            frame_count: count,
-            duration_per_frame: duration,
-        };
+        if let Some(slot) = self.definitions.get_mut(self.anim_count) {
+            *slot = AnimationDef {
+                frame_offset: offset,
+                frame_count: count,
+                duration_per_frame: duration,
+            }
+        }
+
         self.anim_count += 1;
         Ok(anim_id)
     }
-    pub fn get_def(&self, anim_id: AnimationId) -> &AnimationDef {
-        &self.definitions[anim_id.index]
+
+    pub fn get_def(&self, anim_id: AnimationId) -> AnimationDef {
+        self.definitions
+            .get(anim_id.index)
+            .copied()
+            .unwrap_or_default()
     }
 
-    pub fn get_frame(&self, anim_id: AnimationId, current_frame: u8) -> GridPos {
+    pub fn get_frame(&self, anim_id: AnimationId, current_frame: u8) -> Option<GridPos> {
         let def = self.get_def(anim_id);
         let idx = usize::from(current_frame) % def.frame_count;
         self.frame_storage.get(def.frame_offset, idx)

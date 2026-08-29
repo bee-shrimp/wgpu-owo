@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Ok, Result};
+use anyhow::Result;
+use winit::dpi::PhysicalSize;
 
 use crate::{
     config::{LOGIC_HEIGHT, LOGIC_WIDTH},
-    ecs::Size,
     renderer::buffers,
 };
 
@@ -18,8 +18,10 @@ struct ViewportData {
 }
 
 /// draw instances onto a small texture
+#[allow(clippy::too_many_arguments)]
 pub fn draw_mid_renderpass(
     encoder: &mut wgpu::CommandEncoder,
+
     mid_texture_view: &wgpu::TextureView,
     mid_render_pipeline: &wgpu::RenderPipeline,
     mid_bind_group: &wgpu::BindGroup,
@@ -77,7 +79,7 @@ pub fn draw_scaler_renderpass(
 
     fullscreen_vertex_buffer: &wgpu::Buffer,
 
-    window_size: Size,
+    window_size: PhysicalSize<u32>,
 ) {
     // ------------------------------------------------------------ surface renderpass
 
@@ -98,7 +100,9 @@ pub fn draw_scaler_renderpass(
         multiview_mask: None,
     });
 
-    let viewport_data = calc_ratio(window_size.w, window_size.h);
+    // allow u32->f32 as conversion for ratio calculation
+    #[allow(clippy::as_conversions, clippy::cast_precision_loss)]
+    let viewport_data = calc_ratio(window_size.width as f32, window_size.height as f32);
 
     // ------------------------------------------------------------ use the renderpass
 

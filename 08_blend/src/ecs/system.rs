@@ -50,13 +50,19 @@ impl Systems {
     ) -> Result<()> {
         AnimationSystem::update(world, dt)?;
 
-        if let Some(GameEvent::Spawn) = CreateEntitySystem::update(world, input)? {
+        if matches!(
+            CreateEntitySystem::update(world, input)?,
+            Some(GameEvent::Spawn)
+        ) {
             SoundSystem::play_spawn(sound)?;
-        };
+        }
 
-        if let Some(GameEvent::Despawn) = KillEntitySystem::update(world, input)? {
+        if matches!(
+            KillEntitySystem::update(world, input)?,
+            Some(GameEvent::Despawn)
+        ) {
             SoundSystem::play_despawn(sound)?;
-        };
+        }
 
         Ok(())
     }
@@ -306,7 +312,9 @@ fn build_instance_data(
     let size = components.sizes.get(entity)?;
 
     let anim_state = components.animations.get(entity)?;
-    let g_pos = registry.get_frame(AnimationId::new(anim_state.id), anim_state.current_frame);
+    let g_pos = registry
+        .get_frame(AnimationId::new(anim_state.id), anim_state.current_frame)
+        .unwrap_or_default();
     let sprite_data = SpriteData::new(g_pos);
 
     Some(InstanceData {

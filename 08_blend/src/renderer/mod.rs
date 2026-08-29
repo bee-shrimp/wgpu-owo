@@ -8,10 +8,7 @@ use std::sync::Arc;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::Window;
 
-use crate::{
-    config::{LOGIC_HEIGHT, LOGIC_WIDTH},
-    ecs::Size,
-};
+use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH};
 
 mod bindgroups;
 mod buffers;
@@ -92,7 +89,7 @@ impl Renderer {
             buffers::RECT_VERTICES,
         );
 
-        let instance_buffer = buffers::create_instance_buffer(&device);
+        let instance_buffer = buffers::create_instance_buffer(&device)?;
         let num_instances = u32::try_from(instances.len())?;
 
         let index_buffer = buffers::create_index_buffer(&device, buffers::RECT_INDICES);
@@ -152,7 +149,7 @@ impl Renderer {
             Some(&u_t_s_bind_group_layout),
             &mid_shader,
             wgpu::BlendState::ALPHA_BLENDING,
-        );
+        )?;
 
         // -------------------------------------------------------- scaler
 
@@ -170,7 +167,7 @@ impl Renderer {
             &surface,
             &t_s_bind_group_layout,
             &scaler_shader,
-        );
+        )?;
 
         // -------------------------------------------------------- renderer
 
@@ -257,10 +254,7 @@ impl Renderer {
             &self.scaler_render_pipeline,
             &self.scaler_bind_group,
             &self.fullscreen_vertex_buffer,
-            Size {
-                w: self.window.inner_size().width as f32,
-                h: self.window.inner_size().height as f32,
-            },
+            self.window.inner_size(),
         );
 
         self.queue.submit([encoder.finish()]);
@@ -288,11 +282,12 @@ impl Renderer {
 
     // ------------------------------------------------------------ update uniform buffer
 
-    pub fn update(&mut self, instances: &[InstanceData]) {
+    pub fn update(&mut self, instances: &[InstanceData]) -> Result<()> {
         buffers::update_uniform_buffer(&self.queue, &self.uniform_buffer);
 
         buffers::update_instance_buffer(&self.queue, &self.instance_buffer, instances);
 
-        self.num_instances = instances.len() as u32;
+        self.num_instances = u32::try_from(instances.len())?;
+        Ok(())
     }
 }

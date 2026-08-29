@@ -63,15 +63,29 @@ pub async fn init_wgpu(
         .iter()
         .copied()
         .find(wgpu::TextureFormat::is_srgb)
-        .unwrap_or(surface_caps.formats[0]);
+        .unwrap_or(
+            surface_caps
+                .formats
+                .first()
+                .copied()
+                .context("no usable surface format found")?,
+        );
 
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
         width: size.width,
         height: size.height,
-        present_mode: surface_caps.present_modes[0],
-        alpha_mode: surface_caps.alpha_modes[0],
+        present_mode: surface_caps
+            .present_modes
+            .first()
+            .copied()
+            .context("no usable present mode for surface caps")?,
+        alpha_mode: surface_caps
+            .alpha_modes
+            .first()
+            .copied()
+            .context("no usable alpha mode for surface caps")?,
         view_formats: vec![],
         desired_maximum_frame_latency: 2,
         color_space: wgpu::SurfaceColorSpace::Auto,
