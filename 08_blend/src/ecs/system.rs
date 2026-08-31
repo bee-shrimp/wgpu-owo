@@ -16,23 +16,51 @@ use crate::world::WorldData;
 
 #[derive(Debug, Clone, Copy)]
 enum Command {
+    Spawn(Entity, Pos),
     Despawn(Entity),
 }
 
-#[derive(Debug, Clone, Copy)]
-enum GameEvent {
-    Spawn,
+// #[derive(Debug, Clone, Copy)]
+// enum GameEvent {
+//     Spawn,
+// }
+
+struct CommandQuere {
+    queue: Vec<Command>,
+}
+
+impl CommandQuere {
+    fn new() -> Self {
+        Self { queue: Vec::new() }
+    }
+    fn apply(
+        &mut self,
+        entity_manager: &mut EntityManager,
+        components: &mut Components,
+    ) -> Result<()> {
+        for command in self.queue.drain(..) {
+            match command {
+                Command::Spawn(entity, pos) => {
+                    create_entity_with_pos(entity, components, pos, AnimationId::new(1))?;
+                }
+                Command::Despawn(entity) => {
+                    kill_entity(entity_manager, components, entity)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 // ---------------------------------------------------------------- systems storage
 
 pub struct Systems {
-    commands: Vec<Command>,
+    commands: CommandQuere,
 }
 impl Default for Systems {
     fn default() -> Self {
         Self {
-            commands: Vec::new(),
+            commands: CommandQuere::new(),
         }
     }
 }
@@ -45,14 +73,12 @@ impl Systems {
             x: f32::from(LOGIC_WIDTH / 2 - RECT_WIDTH / 2),
             y: f32::from(LOGIC_HEIGHT / 2 - RECT_HEIGHT / 2),
         };
+        let entity = world
+            .entity_manager
+            .spawn()
+            .ok_or(anyhow::anyhow!("failed to spawn first entity"))?;
 
-        create_entity_with_pos(
-            &mut world.entity_manager,
-            &mut world.components,
-            center,
-            AnimationId::new(0),
-        )
-        .ok_or(anyhow::anyhow!("failed create first entity"))?;
+        create_entity_with_pos(entity, &mut world.components, center, AnimationId::new(0))?;
 
         Ok(())
     }
@@ -66,26 +92,19 @@ impl Systems {
     ) -> Result<()> {
         AnimationSystem::update(world, dt)?;
 
-        if matches!(
-            CreateEntitySystem::update(world, input),
-            Some(GameEvent::Spawn)
-        ) {
+        if let Some(command) = CreateEntitySystem::update(&mut world.entity_manager, input) {
+            self.commands.queue.push(command);
             SoundSystem::play_spawn(sound)?;
         }
 
         let kill_query = world.query::<(Entity, &Pos, &Size)>();
         if let Some(command) = KillEntitySystem::update(kill_query, input) {
-            match command {
-                Command::Despawn(entity) => {
-                    world.entity_manager.despawn(entity)?;
-                    world.components.positions.remove(entity)?;
-                    world.components.sizes.remove(entity)?;
-                    world.components.animations.remove(entity)?;
-                }
-            }
+            self.commands.queue.push(command);
             SoundSystem::play_despawn(sound)?;
         }
 
+        self.commands
+            .apply(&mut world.entity_manager, &mut world.components)?;
         Ok(())
     }
 
@@ -141,55 +160,42 @@ impl AnimationSystem {
 pub struct CreateEntitySystem;
 
 impl CreateEntitySystem {
-    fn update(world: &mut WorldData, input: &InputState) -> Option<GameEvent> {
+    fn update(entity_manager: &mut EntityManager, input: &InputState) -> Option<Command> {
         let Some(pos) = input.left_click else {
             return None;
         };
-
-        create_entity_with_pos(
-            &mut world.entity_manager,
-            &mut world.components,
-            pos,
-            AnimationId::new(1),
-        )
+        let Some(entity) = entity_manager.spawn() else {
+            return None;
+        };
+        Some(Command::Spawn(entity, pos))
     }
 }
 fn create_entity_with_pos(
-    entity_manager: &mut EntityManager,
+    entity: Entity,
     components: &mut Components,
     pos: Pos,
     anim_id: AnimationId,
-) -> Option<GameEvent> {
-    let Some(entity) = entity_manager.spawn() else {
-        return None;
-    };
+) -> Result<()> {
+    components.positions.insert(entity, pos)?;
 
-    components.positions.insert(entity, pos).ok()?;
+    components.sizes.insert(
+        entity,
+        Size {
+            w: f32::from(RECT_WIDTH),
+            h: f32::from(RECT_HEIGHT),
+        },
+    )?;
 
-    components
-        .sizes
-        .insert(
-            entity,
-            Size {
-                w: f32::from(RECT_WIDTH),
-                h: f32::from(RECT_HEIGHT),
-            },
-        )
-        .ok()?;
+    components.animations.insert(
+        entity,
+        AnimationState {
+            current_frame: 0,
+            elapsed: 0.0,
+            id: u8::try_from(anim_id.index)?,
+        },
+    )?;
 
-    components
-        .animations
-        .insert(
-            entity,
-            AnimationState {
-                current_frame: 0,
-                elapsed: 0.0,
-                id: u8::try_from(anim_id.index).ok()?,
-            },
-        )
-        .ok()?;
-
-    Some(GameEvent::Spawn)
+    Ok(())
 }
 
 // ---------------------------------------------------------------- kill entity system
@@ -205,20 +211,6 @@ impl KillEntitySystem {
         query
             .iter()
             .find_map(|i| kill_entity_with_pos(i.0, i.1, i.2, click_pos))
-        // {
-        //     let killed = kill_entity_with_pos(i.0, i.1, i.2, click_pos);
-        //     if killed.is_some() {
-        //         return killed;
-        //     } else {
-        //         return None;
-        //     }
-
-        //     kill_entity_with_pok(
-        //     &mut world.entity_manager,
-        //     &mut world.components,
-        //     &world.update_targets,
-        //     pos,
-        // )
     }
 }
 
@@ -231,6 +223,17 @@ fn kill_entity_with_pos(entity: Entity, pos: &Pos, size: &Size, click_pos: Pos) 
         return Some(Command::Despawn(entity));
     }
     None
+}
+fn kill_entity(
+    entity_manager: &mut EntityManager,
+    components: &mut Components,
+    entity: Entity,
+) -> Result<()> {
+    entity_manager.despawn(entity)?;
+    components.positions.remove(entity)?;
+    components.sizes.remove(entity)?;
+    components.animations.remove(entity)?;
+    Ok(())
 }
 
 // ---------------------------------------------------------------- instance update system

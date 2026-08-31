@@ -107,21 +107,21 @@ impl<T: Default> ComponentStorage<T> {
         Ok(())
     }
 
-    // /// returns iterator (Entity, &T).
-    // pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
-    //     (0..MAX_ENTITIES).filter_map(move |i| {
-    //         if self.alive[i] {
-    //             Some((Entity::new(i), &self.components[i]))
-    //         } else {
-    //             None
-    //         }
-    //     })
-    // }
-    //
-    // /// returns how many entities are alive. mainly for debug.
-    // pub fn count_alive(&self) -> usize {
-    //     self.alive.iter().filter(|&&a| a).count()
-    // }
+    pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
+        self.components
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
+            .map(|(i, t)| (Entity::new(i), t))
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
+        self.components
+            .iter_mut()
+            .enumerate()
+            .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
+            .map(|(i, t)| (Entity::new(i), t))
+    }
 }
 
 #[cfg(test)]
