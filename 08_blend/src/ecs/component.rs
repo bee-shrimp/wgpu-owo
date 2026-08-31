@@ -27,19 +27,6 @@ pub struct Components {
     pub sizes: ComponentStorage<Size>,
     pub animations: ComponentStorage<AnimationState>,
 }
-impl Components {
-    pub fn iter_alive(&self) -> impl Iterator<Item = Entity> {
-        (0..MAX_ENTITIES)
-            .filter(move |&i| self.positions.alive.get(i).is_some_and(|state| *state))
-            .map(Entity::new)
-    }
-
-    pub fn with_animation_state(&self) -> impl Iterator<Item = Entity> {
-        (0..MAX_ENTITIES)
-            .filter(move |&i| self.animations.alive.get(i).is_some_and(|state| *state))
-            .map(Entity::new)
-    }
-}
 
 // ---------------------------------------------------------------- component storage
 
@@ -107,21 +94,21 @@ impl<T: Default> ComponentStorage<T> {
         Ok(())
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
-        self.components
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
-            .map(|(i, t)| (Entity::new(i), t))
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
-        self.components
-            .iter_mut()
-            .enumerate()
-            .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
-            .map(|(i, t)| (Entity::new(i), t))
-    }
+    // pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
+    //     self.components
+    //         .iter()
+    //         .enumerate()
+    //         .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
+    //         .map(|(i, t)| (Entity::new(i), t))
+    // }
+    //
+    // pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
+    //     self.components
+    //         .iter_mut()
+    //         .enumerate()
+    //         .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
+    //         .map(|(i, t)| (Entity::new(i), t))
+    // }
 }
 
 #[cfg(test)]

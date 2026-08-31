@@ -3,9 +3,9 @@
 use anyhow::Result;
 
 use crate::ecs::entity::{Entity, EntityManager};
-use crate::ecs::{Components, Pos, Query, Size};
+use crate::ecs::{ComponentStorage, Components, Pos, Size};
 
-use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, RECT_HEIGHT, RECT_WIDTH};
+use crate::config::{LOGIC_HEIGHT, LOGIC_WIDTH, MAX_ENTITIES, RECT_HEIGHT, RECT_WIDTH};
 use crate::renderer::InstanceData;
 
 use crate::animation::{AnimationId, AnimationRegistry, AnimationState, init_animation_registry};
@@ -20,11 +20,6 @@ enum Command {
     Despawn(Entity),
 }
 
-// #[derive(Debug, Clone, Copy)]
-// enum GameEvent {
-//     Spawn,
-// }
-
 struct CommandQuere {
     queue: Vec<Command>,
 }
@@ -37,14 +32,17 @@ impl CommandQuere {
         &mut self,
         entity_manager: &mut EntityManager,
         components: &mut Components,
+        sound: &SoundPlayer,
     ) -> Result<()> {
         for command in self.queue.drain(..) {
             match command {
                 Command::Spawn(entity, pos) => {
                     create_entity_with_pos(entity, components, pos, AnimationId::new(1))?;
+                    SoundSystem::play_spawn(sound)?;
                 }
                 Command::Despawn(entity) => {
                     kill_entity(entity_manager, components, entity)?;
+                    SoundSystem::play_despawn(sound)?;
                 }
             }
         }
@@ -66,8 +64,9 @@ impl Default for Systems {
 }
 
 impl Systems {
-    pub fn init(&self, world: &mut WorldData) -> Result<()> {
+    pub fn init(&mut self, world: &mut WorldData) -> Result<()> {
         init_animation_registry(&mut world.anim_registry)?;
+        self.commands.queue.reserve(MAX_ENTITIES);
 
         let center = Pos {
             x: f32::from(LOGIC_WIDTH / 2 - RECT_WIDTH / 2),
@@ -76,7 +75,7 @@ impl Systems {
         let entity = world
             .entity_manager
             .spawn()
-            .ok_or(anyhow::anyhow!("failed to spawn first entity"))?;
+            .ok_or_else(|| anyhow::anyhow!("failed to spawn first entity"))?;
 
         create_entity_with_pos(entity, &mut world.components, center, AnimationId::new(0))?;
 
@@ -90,26 +89,35 @@ impl Systems {
         sound: &SoundPlayer,
         dt: f32,
     ) -> Result<()> {
-        AnimationSystem::update(world, dt)?;
+        // -------------------------------------------------------- animation update
 
-        if let Some(command) = CreateEntitySystem::update(&mut world.entity_manager, input) {
+        let animations = &mut world.components.animations;
+        let registry = &world.anim_registry;
+        let alive = animations.alive;
+        AnimationSystem::update(animations, registry, &alive, dt)?;
+
+        // -------------------------------------------------------- spawn update
+
+        let entity_manager = &mut world.entity_manager;
+        if let Some(command) = CreateEntitySystem::update(entity_manager, input) {
             self.commands.queue.push(command);
-            SoundSystem::play_spawn(sound)?;
         }
 
-        let kill_query = world.query::<(Entity, &Pos, &Size)>();
-        if let Some(command) = KillEntitySystem::update(kill_query, input) {
+        // -------------------------------------------------------- kill update
+
+        let positions = &world.components.positions;
+        let sizes = &world.components.sizes;
+        let alive = &world.components.positions.alive;
+
+        if let Some(command) = KillEntitySystem::update(positions, sizes, alive, input) {
             self.commands.queue.push(command);
-            SoundSystem::play_despawn(sound)?;
         }
 
+        // -------------------------------------------------------- apply commands
         self.commands
-            .apply(&mut world.entity_manager, &mut world.components)?;
-        Ok(())
-    }
+            .apply(&mut world.entity_manager, &mut world.components, sound)?;
 
-    pub fn update_instances(world: &mut WorldData) {
-        InstanceDataBuildSystem::update(world);
+        Ok(())
     }
 }
 
@@ -130,20 +138,24 @@ impl SoundSystem {
 
 pub struct AnimationSystem;
 impl AnimationSystem {
-    fn update(world: &mut WorldData, dt: f32) -> Result<()> {
-        world.update_targets.clear();
-        world
-            .update_targets
-            .extend(world.components.with_animation_state());
+    fn update(
+        animations: &mut ComponentStorage<AnimationState>,
+        registry: &AnimationRegistry,
+        alive: &[bool; MAX_ENTITIES],
+        dt: f32,
+    ) -> Result<()> {
+        for idx in 0..MAX_ENTITIES {
+            if !alive.get(idx).is_some_and(|state| *state) {
+                continue;
+            }
 
-        for entity in &world.update_targets {
-            let Some(state) = world.components.animations.get_mut(*entity) else {
+            let Some(state) = animations.get_mut(Entity::new(idx)) else {
                 continue;
             };
 
             state.elapsed += dt;
 
-            let def = world.anim_registry.get_def(AnimationId::new(state.id));
+            let def = registry.get_def(AnimationId::new(state.id));
 
             if state.elapsed >= def.duration_per_frame {
                 state.elapsed -= def.duration_per_frame;
@@ -161,15 +173,14 @@ pub struct CreateEntitySystem;
 
 impl CreateEntitySystem {
     fn update(entity_manager: &mut EntityManager, input: &InputState) -> Option<Command> {
-        let Some(pos) = input.left_click else {
-            return None;
-        };
-        let Some(entity) = entity_manager.spawn() else {
-            return None;
-        };
+        let pos = input.left_click?;
+
+        let entity = entity_manager.spawn()?;
+
         Some(Command::Spawn(entity, pos))
     }
 }
+
 fn create_entity_with_pos(
     entity: Entity,
     components: &mut Components,
@@ -203,27 +214,38 @@ fn create_entity_with_pos(
 pub struct KillEntitySystem;
 
 impl KillEntitySystem {
-    fn update(query: Query<'_, (Entity, &Pos, &Size)>, input: &InputState) -> Option<Command> {
-        let Some(click_pos) = input.right_click else {
+    fn update(
+        positions: &ComponentStorage<Pos>,
+        sizes: &ComponentStorage<Size>,
+        alive: &[bool; MAX_ENTITIES],
+        input: &InputState,
+    ) -> Option<Command> {
+        let click_pos = input.right_click?;
+
+        for idx in 0..MAX_ENTITIES {
+            if !alive.get(idx).is_some_and(|state| *state) {
+                continue;
+            }
+
+            let entity = Entity::new(idx);
+
+            let pos = positions.get(entity)?;
+            let size = sizes.get(entity)?;
+
+            if click_pos.x >= pos.x
+                && pos.x + size.w >= click_pos.x
+                && click_pos.y >= pos.y
+                && pos.y + size.h >= click_pos.y
+            {
+                return Some(Command::Despawn(entity));
+            }
             return None;
-        };
+        }
 
-        query
-            .iter()
-            .find_map(|i| kill_entity_with_pos(i.0, i.1, i.2, click_pos))
+        None
     }
 }
 
-fn kill_entity_with_pos(entity: Entity, pos: &Pos, size: &Size, click_pos: Pos) -> Option<Command> {
-    if click_pos.x >= pos.x
-        && pos.x + size.w >= click_pos.x
-        && click_pos.y >= pos.y
-        && pos.y + size.h >= click_pos.y
-    {
-        return Some(Command::Despawn(entity));
-    }
-    None
-}
 fn kill_entity(
     entity_manager: &mut EntityManager,
     components: &mut Components,
@@ -238,19 +260,17 @@ fn kill_entity(
 
 // ---------------------------------------------------------------- instance update system
 
-pub struct InstanceDataBuildSystem;
-impl InstanceDataBuildSystem {
+pub struct InstanceDataBuilder;
+impl InstanceDataBuilder {
     /// build `InstanceData` from components data.
-    fn update(world: &mut WorldData) {
+    pub fn update(world: &mut WorldData) {
         world.instances.clear();
 
-        world.update_targets.clear();
-        world.update_targets.extend(world.components.iter_alive());
-
+        let alive = &world.components.positions.alive;
         world.instances.extend(instance_data_iter(
             &world.components,
             &world.anim_registry,
-            &world.update_targets,
+            alive,
         ));
     }
 }
@@ -259,11 +279,14 @@ impl InstanceDataBuildSystem {
 fn instance_data_iter(
     components: &Components,
     registry: &AnimationRegistry,
-    update_targets: &[Entity],
+    alive: &[bool; MAX_ENTITIES],
 ) -> impl Iterator<Item = InstanceData> {
-    update_targets
+    alive
         .iter()
-        .filter_map(|entity| build_instance_data(*entity, components, registry))
+        .enumerate()
+        .filter(|(_, state)| **state)
+        .map(|(idx, _)| Entity::new(idx))
+        .filter_map(|entity| build_instance_data(entity, components, registry))
 }
 
 /// creates `InstanceData` for each entity.

@@ -6,7 +6,7 @@ use crate::config::MAX_ENTITIES;
 
 use crate::animation::AnimationRegistry;
 
-use crate::ecs::{ComponentStorage, Components, Entity, EntityManager, Query, QuerySpec, Systems};
+use crate::ecs::{ComponentStorage, Components, EntityManager, InstanceDataBuilder, Systems};
 use crate::renderer::InstanceData;
 
 use crate::app::input::InputState;
@@ -17,7 +17,6 @@ use crate::sound::SoundPlayer;
 pub struct WorldData {
     pub entity_manager: EntityManager,
     pub components: Components,
-    pub update_targets: Vec<Entity>,
     pub instances: Vec<InstanceData>,
     pub anim_registry: AnimationRegistry,
 }
@@ -31,20 +30,11 @@ impl Default for WorldData {
                 sizes: ComponentStorage::new(),
                 animations: ComponentStorage::new(),
             },
-            update_targets: Vec::with_capacity(MAX_ENTITIES),
             instances: Vec::with_capacity(MAX_ENTITIES),
             anim_registry: AnimationRegistry::new(),
         }
     }
 }
-/// example
-/// `let query = world.query::<(&Pos,)>();`
-impl WorldData {
-    pub fn query<Q: QuerySpec>(&self) -> Query<'_, Q> {
-        Query::new(&self.components)
-    }
-}
-
 // ---------------------------------------------------------------- world struct
 
 pub struct World {
@@ -83,7 +73,7 @@ impl World {
 
     /// returns updated instance data.
     pub fn update_instances(&mut self) -> &[InstanceData] {
-        Systems::update_instances(&mut self.data);
+        InstanceDataBuilder::update(&mut self.data);
 
         &self.data.instances
     }
