@@ -27,6 +27,7 @@ impl Default for WorldData {
             entity_manager: EntityManager::new(),
             components: Components {
                 positions: ComponentStorage::new(),
+                velocities: ComponentStorage::new(),
                 sizes: ComponentStorage::new(),
                 animations: ComponentStorage::new(),
             },

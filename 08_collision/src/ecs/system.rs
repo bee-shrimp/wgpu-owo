@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
+use crate::ecs::component::Vel;
 use crate::ecs::entity::{Entity, EntityManager};
 use crate::ecs::{ComponentStorage, Components, Pos, Size};
 
@@ -16,8 +17,16 @@ use crate::world::WorldData;
 
 #[derive(Debug, Clone, Copy)]
 enum Command {
+    Movement(Entity, Pos),
+    Collision(Entity, Axis),
     Spawn(Entity, Pos),
     Despawn(Entity),
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Axis {
+    X,
+    Y,
 }
 
 struct CommandQuere {
@@ -36,14 +45,21 @@ impl CommandQuere {
     ) -> Result<()> {
         for command in self.queue.drain(..) {
             match command {
+                Command::Movement(entity, new_pos) => {
+                    *components
+                        .positions
+                        .get_mut(entity)
+                        .context("get mut fail")? = new_pos
+                }
                 Command::Spawn(entity, pos) => {
-                    create_entity_with_pos(entity, components, pos, AnimationId::new(1))?;
+                    // create_entity_with_pos(entity, components, pos, AnimationId::new(1))?;
                     SoundSystem::play_spawn(sound)?;
                 }
                 Command::Despawn(entity) => {
                     kill_entity(entity_manager, components, entity)?;
                     SoundSystem::play_despawn(sound)?;
                 }
+                _ => {} //TODO: remove
             }
         }
         Ok(())
@@ -68,16 +84,41 @@ impl Systems {
         init_animation_registry(&mut world.anim_registry)?;
         self.commands.queue.reserve(MAX_ENTITIES);
 
-        let center = Pos {
+        let upper = Pos {
             x: f32::from(LOGIC_WIDTH / 2 - RECT_WIDTH / 2),
-            y: f32::from(LOGIC_HEIGHT / 2 - RECT_HEIGHT / 2),
+            y: f32::from(LOGIC_HEIGHT / 2 - RECT_HEIGHT * 2),
         };
-        let entity = world
+        let entity1 = world
             .entity_manager
             .spawn()
             .ok_or_else(|| anyhow::anyhow!("failed to spawn first entity"))?;
+        let up = Vel { vx: 0.0, vy: -0.5 };
 
-        create_entity_with_pos(entity, &mut world.components, center, AnimationId::new(0))?;
+        create_entity_with_pos(
+            entity1,
+            &mut world.components,
+            upper,
+            up,
+            AnimationId::new(0),
+        )?;
+
+        let lower = Pos {
+            x: f32::from(LOGIC_WIDTH / 2 - RECT_WIDTH / 2),
+            y: f32::from(LOGIC_HEIGHT / 2 + RECT_HEIGHT),
+        };
+        let entity2 = world
+            .entity_manager
+            .spawn()
+            .ok_or_else(|| anyhow::anyhow!("failed to spawn first entity"))?;
+        let down = Vel { vx: 0.0, vy: 0.5 };
+
+        create_entity_with_pos(
+            entity2,
+            &mut world.components,
+            lower,
+            down,
+            AnimationId::new(1),
+        )?;
 
         Ok(())
     }
@@ -93,25 +134,29 @@ impl Systems {
 
         let animations = &mut world.components.animations;
         let registry = &world.anim_registry;
-        let alive = animations.alive;
-        AnimationSystem::update(animations, registry, &alive, dt)?;
-
-        // -------------------------------------------------------- spawn update
-
-        let entity_manager = &mut world.entity_manager;
-        if let Some(command) = CreateEntitySystem::update(entity_manager, input) {
-            self.commands.queue.push(command);
-        }
-
-        // -------------------------------------------------------- kill update
+        AnimationSystem::update(animations, registry, dt)?;
 
         let positions = &world.components.positions;
         let sizes = &world.components.sizes;
-        let alive = &world.components.positions.alive;
+        let velocities = &mut world.components.velocities;
+        // MovementSystem::update(positions, velocities, input);
+        // CollisionSystem::update(sizes, new_positions));
+        // -------------------------------------------------------- spawn update
 
-        if let Some(command) = KillEntitySystem::update(positions, sizes, alive, input) {
-            self.commands.queue.push(command);
-        }
+        // let entity_manager = &mut world.entity_manager;
+        // if let Some(command) = CreateEntitySystem::update(entity_manager, input) {
+        //     self.commands.queue.push(command);
+        // }
+
+        // -------------------------------------------------------- kill update
+
+        // let positions = &world.components.positions;
+        // let sizes = &world.components.sizes;
+        // let alive = &world.components.positions.alive;
+        //
+        // if let Some(command) = KillEntitySystem::update(positions, sizes, alive, input) {
+        //     self.commands.queue.push(command);
+        // }
 
         // -------------------------------------------------------- apply commands
         self.commands
@@ -134,6 +179,65 @@ impl SoundSystem {
     }
 }
 
+// ---------------------------------------------------------------- movement system
+
+pub struct MovementSystem;
+impl MovementSystem {
+    fn update(
+        positions: &ComponentStorage<Pos>,
+        velocities: &ComponentStorage<Vel>,
+        _input: &InputState,
+    ) -> impl Iterator<Item = (Entity, Pos)> {
+        positions
+            .iter()
+            .zip(velocities.iter())
+            .map(|((entity, pos), (_, vel))| (entity, calc_movement(*pos, *vel)))
+    }
+}
+
+fn calc_movement(pos: Pos, vel: Vel) -> Pos {
+    let x = pos.x + vel.vx;
+    let y = pos.y + vel.vy;
+    let new_pos = Pos { x, y };
+
+    new_pos
+}
+
+// ---------------------------------------------------------------- collision system
+
+pub struct CollisionSystem;
+impl CollisionSystem {
+    // fn update(sizes: &ComponentStorage<Size>, new_positions: impl Iterator<Item = (Entity,Pos)>) -> Option<Command> {
+    //     new_positions.map(|(entity, pos)| (entity,pos,sizes.get(entity).ok_or("e")?)).for_each(|(entity,pos,size)| is_window_edge(pos, *size).then(find_wall_collision_axis(pos,size)));
+    //
+    //     if is_window_edge(new_pos, *size ) {
+    //         let axis = find_wall_collision_axis(new_pos, size);
+    //         return Some(Command::Collision(entity, axis));
+    //     };
+    //     if is_entity_collision() {
+    //         let axis = find_entity_collision_axis();
+    //     }
+    //     todo!()
+    // }
+}
+
+//todo: entity collision.
+
+fn is_window_edge(new_pos: Pos, size: Size) -> bool {
+    new_pos.x + size.w >= f32::from(LOGIC_WIDTH)
+        || new_pos.x <= 0.0
+        || new_pos.y + size.h >= f32::from(LOGIC_HEIGHT)
+        || new_pos.y <= 0.0
+}
+
+fn find_wall_collision_axis(pos: Pos, size: Size) -> Axis {
+    let x = ((pos.x - 0.0).abs()).max((pos.x + size.w - f32::from(LOGIC_WIDTH)).abs());
+    let y = ((pos.y - 0.0).abs()).max((pos.y + size.h - f32::from(LOGIC_HEIGHT)).abs());
+    let bigger = x.max(y);
+
+    if bigger == x { Axis::X } else { Axis::Y }
+}
+
 // ---------------------------------------------------------------- animation system
 
 pub struct AnimationSystem;
@@ -141,27 +245,22 @@ impl AnimationSystem {
     fn update(
         animations: &mut ComponentStorage<AnimationState>,
         registry: &AnimationRegistry,
-        alive: &[bool; MAX_ENTITIES],
         dt: f32,
     ) -> Result<()> {
-        for idx in 0..MAX_ENTITIES {
-            if !alive.get(idx).is_some_and(|state| *state) {
-                continue;
-            }
+        animations
+            .iter_mut()
+            .try_for_each(|(_, state)| -> Result<()> {
+                state.elapsed += dt;
 
-            let Some(state) = animations.get_mut(Entity::new(idx)) else {
-                continue;
-            };
+                let def = registry.get_def(AnimationId::new(state.id));
 
-            state.elapsed += dt;
-
-            let def = registry.get_def(AnimationId::new(state.id));
-
-            if state.elapsed >= def.duration_per_frame {
-                state.elapsed -= def.duration_per_frame;
-                state.current_frame = (state.current_frame + 1) % u8::try_from(def.frame_count)?;
-            }
-        }
+                if state.elapsed >= def.duration_per_frame {
+                    state.elapsed -= def.duration_per_frame;
+                    state.current_frame =
+                        (state.current_frame + 1) % u8::try_from(def.frame_count)?;
+                }
+                Ok(())
+            })?;
 
         Ok(())
     }
@@ -185,9 +284,12 @@ fn create_entity_with_pos(
     entity: Entity,
     components: &mut Components,
     pos: Pos,
+    vel: Vel,
     anim_id: AnimationId,
 ) -> Result<()> {
     components.positions.insert(entity, pos)?;
+
+    components.velocities.insert(entity, vel)?;
 
     components.sizes.insert(
         entity,
@@ -239,7 +341,6 @@ impl KillEntitySystem {
             {
                 return Some(Command::Despawn(entity));
             }
-            return None;
         }
 
         None
@@ -253,6 +354,7 @@ fn kill_entity(
 ) -> Result<()> {
     entity_manager.despawn(entity)?;
     components.positions.remove(entity)?;
+    // components.velocities.remove(entity)?;
     components.sizes.remove(entity)?;
     components.animations.remove(entity)?;
     Ok(())

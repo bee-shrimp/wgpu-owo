@@ -14,6 +14,12 @@ pub struct Pos {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
+pub struct Vel {
+    pub vx: f32,
+    pub vy: f32,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Size {
     pub w: f32,
     pub h: f32,
@@ -24,6 +30,7 @@ pub struct Size {
 #[derive(Debug, Clone, Copy)]
 pub struct Components {
     pub positions: ComponentStorage<Pos>,
+    pub velocities: ComponentStorage<Vel>,
     pub sizes: ComponentStorage<Size>,
     pub animations: ComponentStorage<AnimationState>,
 }
@@ -94,21 +101,23 @@ impl<T: Default> ComponentStorage<T> {
         Ok(())
     }
 
-    // pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
-    //     self.components
-    //         .iter()
-    //         .enumerate()
-    //         .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
-    //         .map(|(i, t)| (Entity::new(i), t))
-    // }
-    //
-    // pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
-    //     self.components
-    //         .iter_mut()
-    //         .enumerate()
-    //         .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
-    //         .map(|(i, t)| (Entity::new(i), t))
-    // }
+    /// returns (Entity, &T) of alive entities.
+    pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
+        self.components
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
+            .map(|(i, t)| (Entity::new(i), t))
+    }
+
+    /// returns (Entity, &mut T) of alive entities.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
+        self.components
+            .iter_mut()
+            .enumerate()
+            .filter(|(i, _)| self.alive.get(*i).is_some_and(|state| *state))
+            .map(|(i, t)| (Entity::new(i), t))
+    }
 }
 
 #[cfg(test)]
