@@ -5,7 +5,7 @@ edition = "2024"
 
 
 [[bin]]
-name = "04_sprites"
+name = "04-sprites"
 path = "src/main.rs"
 
 [dependencies]

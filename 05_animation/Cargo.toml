@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "05_animation"
+name = "05-animation"
 path = "src/main.rs"
 
 [dependencies]

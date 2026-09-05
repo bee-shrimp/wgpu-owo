@@ -5,7 +5,7 @@ edition = "2024"
 
 
 [[bin]]
-name = "03_grid"
+name = "03-grid"
 path = "src/main.rs"
 
 [dependencies]

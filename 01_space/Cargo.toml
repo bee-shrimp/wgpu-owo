@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "01_space"
+name = "01-space"
 path = "src/main.rs"
 
 [dependencies]
@@ -17,3 +17,6 @@ winit = "0.30"
 wgpu = "30.0"
 bytemuck = { version = "1.25", features = [ "derive" ] }
 glam = "0.33"
+
+[lints]
+workspace = true

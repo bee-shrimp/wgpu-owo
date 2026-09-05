@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "02_instances"
+name = "02-instances"
 path = "src/main.rs"
 
 [dependencies]
@@ -18,3 +18,6 @@ wgpu = "30.0"
 bytemuck = { version = "1.25", features = [ "derive" ] }
 glam = "0.33"
 rand = "0.10.2"
+
+[lints]
+workspace = true
