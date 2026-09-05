@@ -1,12 +1,14 @@
 #![allow(clippy::as_conversions)]
+// as conversion allowance to keep return type consistent.
+// Note: (or make uniform buffer return result?)
+
 // ---------------------------------------------------------------- imports
 use crate::renderer::buffers::Uniforms;
 
 // ---------------------------------------------------------------- functions to create bind group layout
 
+// /// returns bind group layout with uniform buffer.
 // pub fn create_u_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-//     // ----------------------------------------------------------- bind group w/ uniform
-//
 //     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
 //         label: Some("bind group layout with uniform"),
 //         entries: &[wgpu::BindGroupLayoutEntry {
@@ -22,9 +24,8 @@ use crate::renderer::buffers::Uniforms;
 //     })
 // }
 
+/// returns bind group layout with texture and sampler.
 pub fn create_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-    // ------------------------------------------------------------ bind group w/ texture and sampler
-
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("bind group layout with texture and sampler"),
         entries: &[
@@ -48,9 +49,8 @@ pub fn create_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLay
     })
 }
 
+/// returns bind group layout with uniform buffer, texture, sampler.
 pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-    // ------------------------------------------------------------ bind group w/ uniform, texture, sampler
-
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("bind group layout with uniform, texture, and sampler"),
         entries: &[
@@ -84,8 +84,8 @@ pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupL
     })
 }
 
+/// returns bind group layout with 2 textures and a sampler.
 // pub fn create_t_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-//     // ----------------------------------------------------------- bind group w/ 2 textures, 1 sampler
 //
 //     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
 //         label: Some("bind group layout with 2 textures, 1 sampler"),
@@ -122,8 +122,7 @@ pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupL
 
 // ---------------------------------------------------------------- functions to create bind groups
 
-// ---------------------------------------------------------------- create bind group w/ uniform
-
+/// returns bind group with uniform buffer.
 // pub fn create_u_bind_group(
 //     device: &wgpu::Device,
 //     label: &str,
@@ -144,8 +143,7 @@ pub fn create_u_t_s_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupL
 //     })
 // }
 
-// ---------------------------------------------------------------- create bind group w/ texture and sampler
-
+/// returns bind group with texture and sumpler.
 pub fn create_t_s_bind_group(
     device: &wgpu::Device,
     label: &str,
@@ -169,8 +167,7 @@ pub fn create_t_s_bind_group(
     })
 }
 
-// ---------------------------------------------------------------- create bind group w/ uniform, texture, sampler
-
+/// returns bind group with uniform buffer, texture, sampler.
 pub fn create_u_t_s_bind_group(
     device: &wgpu::Device,
     label: &str,

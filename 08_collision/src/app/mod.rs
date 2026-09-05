@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------- App struct
-use anyhow::{Context, Error, Result};
+use color_eyre::eyre::{self, OptionExt, Report, Result, WrapErr};
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -28,7 +28,7 @@ pub struct App {
     world: World,
     input: InputHandler,
     last_frame_time: Option<Instant>,
-    error: Option<Error>,
+    error: Option<Report>,
 }
 
 impl ApplicationHandler for App {
@@ -104,7 +104,6 @@ impl ApplicationHandler for App {
     // ------------------------------------------------------------ things to do after everything else
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        // -------------------------------------------------------- error handling
         if let Err(err) = self.update(event_loop) {
             self.fail(event_loop, err);
         }
@@ -112,12 +111,12 @@ impl ApplicationHandler for App {
 }
 
 impl App {
-    fn fail(&mut self, event_loop: &ActiveEventLoop, err: Error) {
+    fn fail(&mut self, event_loop: &ActiveEventLoop, err: Report) {
         self.error = Some(err);
         event_loop.exit();
     }
 
-    pub fn take_error(&mut self) -> Option<Error> {
+    pub fn take_error(&mut self) -> Option<Report> {
         self.error.take()
     }
 
@@ -126,36 +125,40 @@ impl App {
         let window = Arc::new(
             event_loop
                 .create_window(Window::default_attributes())
-                .context("failed to create window")?,
+                .wrap_err("failed to create window")?,
         );
 
         // -------------------------------------------------------- create world
 
         self.world = World::default();
-        self.world.init().context("failed to init world")?;
+        self.world.init().wrap_err("failed to init world")?;
 
         let instances = self.world.update_instances();
 
-        // -------------------------------------------------------- init input handler
+        // -------------------------------------------------------- create input handler
 
         let window_size = window.inner_size();
 
         self.input = InputHandler::new(window_size);
 
-        // -------------------------------------------------------- create renderer/sound player
+        // -------------------------------------------------------- create renderer
 
         let renderer = smol::block_on(Renderer::new(window, event_loop, instances));
-        let sound_player = smol::block_on(SoundPlayer::new());
 
-        self.renderer = Some(renderer.context("failed to create renderer")?);
-        self.sound = Some(sound_player.context("failed to create sound player")?);
+        self.renderer = Some(renderer.wrap_err("failed to create renderer")?);
 
         // -------------------------------------------------------- init renderer
 
         self.renderer
             .as_mut()
-            .context("failed to find renderer")?
+            .ok_or_eyre("renderer missing")?
             .update(instances)?;
+
+        // -------------------------------------------------------- create sound player
+
+        let sound_player = smol::block_on(SoundPlayer::new());
+
+        self.sound = Some(sound_player.wrap_err("failed to create sound player")?);
 
         // -------------------------------------------------------- init other fields
 
@@ -170,7 +173,7 @@ impl App {
 
         let now = Instant::now();
 
-        // 0.016 = 60fps
+        // dt 0.016 == 60fps
         let dt = self.last_frame_time.map_or(0.016, |last| {
             now.duration_since(last).as_secs_f32().min(0.1)
         });
@@ -204,25 +207,25 @@ impl App {
         // -------------------------------------------------------- sound for world
 
         let Some(sound) = self.sound.as_mut() else {
-            return Err(anyhow::anyhow!("failed to find sound player"));
+            return Err(eyre::eyre!("failed to find sound player"));
         };
 
         // -------------------------------------------------------- update world
 
         self.world
             .update(&input_state, sound, dt)
-            .context("failed to update world")?;
+            .wrap_err("failed to update world")?;
         let instances = self.world.update_instances();
 
         // -------------------------------------------------------- update renderer
 
         let Some(renderer) = self.renderer.as_mut() else {
-            return Err(anyhow::anyhow!("failed to find renderer"));
+            return Err(eyre::eyre!("failed to find renderer"));
         };
 
         renderer
             .update(instances)
-            .context("failed to update renderer")?;
+            .wrap_err("failed to update renderer")?;
         renderer.get_window().request_redraw();
 
         Ok(())

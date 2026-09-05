@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------- imports
-use anyhow::Result;
+use color_eyre::eyre::{self, Result};
 
 use crate::animation::AnimationState;
 use crate::config::MAX_ENTITIES;
@@ -51,10 +51,10 @@ impl<T: Default> ComponentStorage<T> {
         }
     }
 
-    /// adds T to component storage.
+    /// adds T to `ComponentStorage[entity.index]`.
     pub fn insert(&mut self, entity: Entity, component: T) -> Result<()> {
         if entity.index >= MAX_ENTITIES {
-            anyhow::bail!("entity index out of bounds");
+            eyre::bail!("entity index out of bounds");
         }
 
         if let Some(slot) = self.components.get_mut(entity.index) {
@@ -87,11 +87,11 @@ impl<T: Default> ComponentStorage<T> {
         self.components.get_mut(entity.index)
     }
 
-    /// removes T from components array and kill entity(set alive == false).
+    /// disables T in component storage (sets alive == false).
     pub fn remove(&mut self, entity: Entity) -> Result<()> {
         if entity.index >= MAX_ENTITIES || self.alive.get(entity.index).is_some_and(|state| !*state)
         {
-            anyhow::bail!("entity not found");
+            eyre::bail!("entity not found");
         }
 
         if let Some(state) = self.alive.get_mut(entity.index) {

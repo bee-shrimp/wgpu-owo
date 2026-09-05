@@ -21,6 +21,8 @@ pub struct InputState {
     pub now_keys: [bool; KEY_COUNT],
 }
 
+// Todo: add key input enum and make enum map.
+
 // ---------------------------------------------------------------- input handler
 
 pub struct InputHandler {
@@ -50,7 +52,6 @@ impl Default for InputHandler {
 // ---------------------------------------------------------------- take input from app
 
 impl InputHandler {
-    /// creates new `InputHandler`.
     pub fn new(window_size: PhysicalSize<u32>) -> Self {
         Self {
             window_size,
@@ -58,12 +59,10 @@ impl InputHandler {
         }
     }
 
-    /// updates window size.
     pub fn resize(&mut self, window_size: PhysicalSize<u32>) {
         self.window_size = window_size;
     }
 
-    /// adds keycode to `InputHandler.pressed_keys`.
     #[allow(clippy::as_conversions)]
     pub fn insert_key(&mut self, code: KeyCode) {
         if let Some(state) = self.now_keys.get_mut(code as usize) {
@@ -71,7 +70,6 @@ impl InputHandler {
         }
     }
 
-    /// removes keycode from `InputHandler.pressed_keys`.
     #[allow(clippy::as_conversions)]
     pub fn remove_key(&mut self, code: KeyCode) {
         if let Some(state) = self.now_keys.get_mut(code as usize) {
@@ -79,18 +77,15 @@ impl InputHandler {
         }
     }
 
-    /// returns if the keycode is in `InputHandler.pressed_keys`.
     #[allow(clippy::as_conversions)]
     pub fn has_key(&self, code: KeyCode) -> bool {
         self.now_keys.get(code as usize).is_some_and(|state| *state)
     }
 
-    /// updates `InputHandler.cursor_pos`.
     pub fn update_cursor_pos(&mut self, pos: PhysicalPosition<f64>) {
         self.now_cursor_pos = pos;
     }
 
-    /// updates `MouseState`.
     pub fn button_pressed(&mut self, button: MouseButton) {
         let idx = mouse_button_to_usize(button);
         if let Some(state) = self.now_mouse.get_mut(idx) {
@@ -98,7 +93,6 @@ impl InputHandler {
         }
     }
 
-    /// updates `MouseState`.
     pub fn button_released(&mut self, button: MouseButton) {
         let idx = mouse_button_to_usize(button);
         if let Some(state) = self.now_mouse.get_mut(idx) {
@@ -112,7 +106,6 @@ impl InputHandler {
         // self.prev_cursor_pos = self.now_cursor_pos;
     }
 
-    // /// returns if mouse was clicked.
     pub fn has_triggered(&self, button: MouseButton) -> bool {
         self.now_mouse
             .get(mouse_button_to_usize(button))
@@ -123,7 +116,6 @@ impl InputHandler {
                 .is_some_and(|state| !*state)
     }
 
-    /// returns click position.
     pub fn get_click_pos(&self, button: MouseButton) -> Option<Pos> {
         if self.has_triggered(button) {
             cursor_pos_to_world_pos(self.window_size, self.now_cursor_pos)
@@ -132,7 +124,6 @@ impl InputHandler {
         }
     }
 
-    /// returns input state.
     pub fn get_input_state(&self) -> InputState {
         InputState {
             left_click: self.get_click_pos(MouseButton::Left),
@@ -142,7 +133,6 @@ impl InputHandler {
     }
 }
 
-/// maps `MouseButton` to usize.
 fn mouse_button_to_usize(button: MouseButton) -> usize {
     match button {
         MouseButton::Left => 0,
@@ -152,9 +142,8 @@ fn mouse_button_to_usize(button: MouseButton) -> usize {
     }
 }
 
-// allow as conversion with precision loss and truncation
-// since it's only used for ratio calculation.
-/// maps window coord to world coord.
+// as conversion allowance (also precision loss and truncation)
+// for ratio calculation.
 #[allow(
     clippy::as_conversions,
     clippy::cast_precision_loss,

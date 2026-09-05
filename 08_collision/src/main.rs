@@ -3,7 +3,7 @@
 
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Context, Result};
+use color_eyre::Result;
 use winit::event_loop::{ControlFlow, EventLoop};
 
 mod app;
@@ -23,7 +23,7 @@ mod animation;
 fn main() -> Result<()> {
     env_logger::init();
 
-    let event_loop = EventLoop::new().context("failed to create event loop")?;
+    let event_loop = EventLoop::new()?;
 
     event_loop.set_control_flow(ControlFlow::Wait);
 

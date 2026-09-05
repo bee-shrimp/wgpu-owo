@@ -4,15 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "08_collision"
+name = "08-collision"
 path = "src/main.rs"
 
 [dependencies]
+color-eyre = "0.6.5"
 anyhow = "1.0"
 env_logger = "0.11"
 log = "0.4"
-
-pollster = "1.0"
 
 winit = "0.30"
 wgpu = "30.0"
@@ -21,9 +20,11 @@ bytemuck = { version = "1.25", features = [ "derive" ] }
 
 image = {version = "0.25", features = ["png","jpeg"]}
 glam = "0.33"
+
 rodio = "0.22"
 smol = "2.0.2"
 async-fs = "2.2.0"
+
 
 [lints]
 workspace = true

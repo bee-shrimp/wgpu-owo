@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Result;
+use color_eyre::eyre::{self, Result};
 
 use crate::config::MAX_ENTITIES;
 
@@ -57,7 +57,7 @@ impl EntityManager {
     /// stores id for reuse
     pub fn despawn(&mut self, entity: Entity) -> Result<()> {
         if entity.index >= MAX_ENTITIES {
-            anyhow::bail!("entity id is too big");
+            eyre::bail!("entity id is too big");
         }
         self.free_list.push(entity.index);
         Ok(())

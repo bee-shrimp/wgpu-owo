@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Context, Result};
+use color_eyre::eyre::{self, Result, WrapErr};
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -69,6 +69,7 @@ impl Renderer {
 
         let sampler_nearest = init::create_sampler(
             &device,
+            wgpu::AddressMode::ClampToEdge,
             wgpu::FilterMode::Nearest,
             wgpu::MipmapFilterMode::Nearest,
         );
@@ -221,7 +222,7 @@ impl Renderer {
                 return Ok(());
             }
             wgpu::CurrentSurfaceTexture::Lost => {
-                anyhow::bail!("lost device");
+                eyre::bail!("lost device");
             }
         };
 

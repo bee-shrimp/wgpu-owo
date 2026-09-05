@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------- imports
-use anyhow::{Context, Result};
+
+use color_eyre::eyre::{Result, WrapErr};
 
 use image::GenericImageView;
 
@@ -10,8 +11,9 @@ pub struct TextureSize {
     pub height: u32,
 }
 
-// ---------------------------------------------------------------- create texture with image data
+// ---------------------------------------------------------------- functions to create texture.
 
+/// returns texture with image data written.
 pub fn create_diffuse_texture(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
@@ -20,7 +22,7 @@ pub fn create_diffuse_texture(
 ) -> Result<wgpu::TextureView> {
     // ------------------------------------------------------------ image data
 
-    let image = image::load_from_memory(diffuse_bytes).context("failed to load image")?;
+    let image = image::load_from_memory(diffuse_bytes).wrap_err("failed to load image")?;
 
     let diffuse_rgba = image.to_rgba8();
     let dimensions = image.dimensions();
@@ -67,8 +69,7 @@ pub fn create_diffuse_texture(
     Ok(diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default()))
 }
 
-// ---------------------------------------------------------------- create texture to draw onto / to be read
-
+/// returns texture view to draw onto / to be read.
 pub fn create_texture(device: &wgpu::Device, label: &str, size: &TextureSize) -> wgpu::TextureView {
     let new_texture_size = wgpu::Extent3d {
         width: size.width,

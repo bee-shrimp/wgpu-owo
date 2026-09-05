@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Context, Result};
+use color_eyre::eyre::{OptionExt, Result};
 
 use crate::sprite::GridPos;
 
@@ -84,7 +84,7 @@ impl FrameStorage {
     }
 }
 
-/// static definition of animations.
+/// static definition of animation.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AnimationDef {
     /// address in `FrameStorage.frames`.
@@ -95,7 +95,7 @@ pub struct AnimationDef {
     pub duration_per_frame: f32,
 }
 
-/// static data of animations.
+/// static data of animation.
 pub struct AnimationRegistry {
     /// array of static definitions of animations.
     definitions: [AnimationDef; MAX_ANIMATIONS],
@@ -122,7 +122,7 @@ impl AnimationRegistry {
         let (offset, count) = self
             .frame_storage
             .allocate(frames.len())
-            .context("failed to allocate in frame storage")?;
+            .ok_or_eyre("failed to allocate in frame storage")?;
 
         if let Some(slots) = self
             .frame_storage

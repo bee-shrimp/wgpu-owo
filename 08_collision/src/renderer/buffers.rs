@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Ok, Result};
+use color_eyre::eyre::Result;
 use std::mem;
 use wgpu::util::DeviceExt;
 
@@ -38,7 +38,6 @@ impl Vertex {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBS,
         })
-        // Err(anyhow::anyhow!("vertex desc err test"))
     }
 }
 
@@ -87,10 +86,10 @@ pub const RECT_INDICES: &[u16] = &[0, 1, 2, /**/ 1, 3, 2];
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct InstanceData {
-    pub position: [f32; 2], // x, y
-    pub size: [f32; 2],     // w, h
-    pub sprite_offset: [f32; 2],
-    pub sprite_size: [f32; 2],
+    pub position: [f32; 2],      // x, y
+    pub size: [f32; 2],          // w, h
+    pub sprite_offset: [f32; 2], // starting point in spritesheet(0.0..1.0)
+    pub sprite_size: [f32; 2],   // sprite size in spritesheet(0.0..1.0)
 }
 
 // ---------------------------------------------------------------- descriptor for VertexBufferLayout
@@ -132,8 +131,6 @@ pub fn create_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
     })
 }
 
-// ---------------------------------------------------------------- full screen vertex buffer
-
 pub fn create_vertex_buffer(
     device: &wgpu::Device,
     label: &str,
@@ -146,8 +143,8 @@ pub fn create_vertex_buffer(
     })
 }
 
-// ---------------------------------------------------------------- instance buffer
-
+/// returns instance buffer with capacity of
+/// `MAX_ENTITIES * InstanceData`.
 pub fn create_instance_buffer(device: &wgpu::Device) -> Result<wgpu::Buffer> {
     Ok(device.create_buffer(&wgpu::wgt::BufferDescriptor {
         label: Some("instance buffer"),
@@ -157,8 +154,6 @@ pub fn create_instance_buffer(device: &wgpu::Device) -> Result<wgpu::Buffer> {
     }))
 }
 
-// ---------------------------------------------------------------- index buffer
-
 pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("index Buffer"),
@@ -166,6 +161,8 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
         usage: wgpu::BufferUsages::INDEX,
     })
 }
+
+// ---------------------------------------------------------------- functions to update buffer
 
 pub fn update_uniform_buffer(queue: &wgpu::Queue, uniform_buffer: &wgpu::Buffer) {
     let mut view = Mat4::IDENTITY;

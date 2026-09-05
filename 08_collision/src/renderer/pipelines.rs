@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------- imports
 
 use crate::renderer::buffers::{InstanceData, Vertex};
-use anyhow::{Context, Result};
+use color_eyre::eyre::{OptionExt, Result};
 use wgpu::PipelineCompilationOptions;
 
 // ---------------------------------------------------------------- create render pipeline
@@ -55,7 +55,7 @@ pub fn create_pipeline_with_instance(
     shader: &wgpu::ShaderModule,
     blend_state: wgpu::BlendState,
 ) -> Result<wgpu::RenderPipeline> {
-    let new_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(label),
         bind_group_layouts: &[bind_group_layout],
         immediate_size: 0,
@@ -64,7 +64,7 @@ pub fn create_pipeline_with_instance(
     Ok(
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(label),
-            layout: Some(&new_pipeline_layout),
+            layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: shader,
                 entry_point: Some("vs_main"),
@@ -108,7 +108,7 @@ pub fn create_surface_pipeline(
         .formats
         .first()
         .copied()
-        .context("no swapchain capabilities found")?;
+        .ok_or_eyre("no swapchain capabilities found")?;
 
     Ok(
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

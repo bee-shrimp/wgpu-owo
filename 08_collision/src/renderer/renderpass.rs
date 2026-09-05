@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::Result;
+use color_eyre::eyre::Result;
 use winit::dpi::PhysicalSize;
 
 use crate::{
@@ -100,7 +100,7 @@ pub fn draw_scaler_renderpass(
         multiview_mask: None,
     });
 
-    // allow u32->f32 as conversion for ratio calculation
+    // u32->f32 as conversion allowance for ratio calculation
     #[allow(clippy::as_conversions, clippy::cast_precision_loss)]
     let viewport_data = calc_ratio(window_size.width as f32, window_size.height as f32);
 
@@ -124,8 +124,7 @@ pub fn draw_scaler_renderpass(
     drop(scaler_renderpass);
 }
 
-// ---------------------------------------------------------------- calculate viewport data for scaler
-
+/// calculates aspect ratio and returns viewport data.
 fn calc_ratio(surface_w: f32, surface_h: f32) -> ViewportData {
     let w = f32::from(LOGIC_WIDTH);
     let h = f32::from(LOGIC_HEIGHT);

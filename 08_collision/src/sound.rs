@@ -1,7 +1,11 @@
+// ---------------------------------------------------------------- imports
+
 use std::{io::Cursor, sync::Arc};
 
-use anyhow::Result;
+use color_eyre::eyre::Result;
 use rodio::{Decoder, Source};
+
+// ---------------------------------------------------------------- sound player struct
 
 pub struct SoundPlayer {
     _stream_handle: rodio::MixerDeviceSink,

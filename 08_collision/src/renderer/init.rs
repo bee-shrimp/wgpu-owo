@@ -1,12 +1,15 @@
 // ---------------------------------------------------------------- imports
 
-use anyhow::{Context, Result};
+use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use std::sync::Arc;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::Window;
 
 use wgpu::{BackendOptions, InstanceFlags, MemoryBudgetThresholds};
 
+/// creates a new wgpu instance and returns
+/// adapter, device, quere,
+/// surface, surface config.
 pub async fn init_wgpu(
     window: &Arc<Window>,
     event_loop: &ActiveEventLoop,
@@ -41,20 +44,20 @@ pub async fn init_wgpu(
             apply_limit_buckets: true,
         })
         .await
-        .context("failed to request adapter")?;
+        .wrap_err("failed to request adapter")?;
 
     // ------------------------------------------------------------ logical device
 
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor::default())
         .await
-        .context("failed to create device")?;
+        .wrap_err("failed to create device")?;
 
     // ------------------------------------------------------------ surface to draw onto
 
     let surface = wgpu_instance
         .create_surface(window.clone())
-        .context("failed to create surface")?;
+        .wrap_err("failed to create surface")?;
 
     let surface_caps = surface.get_capabilities(&adapter);
 
@@ -68,8 +71,10 @@ pub async fn init_wgpu(
                 .formats
                 .first()
                 .copied()
-                .context("no usable surface format found")?,
+                .ok_or_eyre("no usable surface format found")?,
         );
+
+    // ------------------------------------------------------------ surface config
 
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -80,12 +85,12 @@ pub async fn init_wgpu(
             .present_modes
             .first()
             .copied()
-            .context("no usable present mode for surface caps")?,
+            .ok_or_eyre("no usable present mode for surface caps")?,
         alpha_mode: surface_caps
             .alpha_modes
             .first()
             .copied()
-            .context("no usable alpha mode for surface caps")?,
+            .ok_or_eyre("no usable alpha mode for surface caps")?,
         view_formats: vec![],
         desired_maximum_frame_latency: 2,
         color_space: wgpu::SurfaceColorSpace::Auto,
@@ -95,13 +100,14 @@ pub async fn init_wgpu(
 
 pub fn create_sampler(
     device: &wgpu::Device,
+    address_mode: wgpu::AddressMode,
     filter_mode: wgpu::FilterMode,
     mipmap_filter_mode: wgpu::MipmapFilterMode,
 ) -> wgpu::Sampler {
     device.create_sampler(&wgpu::SamplerDescriptor {
-        address_mode_u: wgpu::AddressMode::ClampToEdge,
-        address_mode_v: wgpu::AddressMode::ClampToEdge,
-        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        address_mode_u: address_mode,
+        address_mode_v: address_mode,
+        address_mode_w: address_mode,
         mag_filter: filter_mode,
         min_filter: filter_mode,
         mipmap_filter: mipmap_filter_mode,
