@@ -2,8 +2,13 @@
 
 use std::{io::Cursor, sync::Arc};
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{OptionExt, Result};
 use rodio::{Decoder, Source};
+
+// ---------------------------------------------------------------- sound sources index
+
+const SPAWN: usize = 0;
+const DESPAWN: usize = 1;
 
 // ---------------------------------------------------------------- sound player struct
 
@@ -37,14 +42,24 @@ impl SoundPlayer {
     }
 
     pub fn play_spawn(&self) -> Result<()> {
-        let cursor = Cursor::new(self.sources[0].clone());
+        let cursor = Cursor::new(
+            self.sources
+                .get(SPAWN)
+                .ok_or_eyre("source SPAWN missing")?
+                .clone(),
+        );
         let source = Decoder::try_from(cursor)?.amplify(0.5);
         self.mixer.add(source);
         Ok(())
     }
 
     pub fn play_despawn(&self) -> Result<()> {
-        let cursor = Cursor::new(self.sources[1].clone());
+        let cursor = Cursor::new(
+            self.sources
+                .get(DESPAWN)
+                .ok_or_eyre("source DESPAWN missing")?
+                .clone(),
+        );
         let source = Decoder::try_from(cursor)?.amplify(0.5);
         self.mixer.add(source);
 

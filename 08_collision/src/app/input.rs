@@ -18,7 +18,7 @@ const MOUSE_BUTTONS: usize = 3;
 pub struct InputState {
     pub left_click: Option<Pos>,
     pub right_click: Option<Pos>,
-    pub now_keys: [bool; KEY_COUNT],
+    // pub now_keys: [bool; KEY_COUNT],
 }
 
 // Todo: add key input enum and make enum map.
@@ -128,7 +128,7 @@ impl InputHandler {
         InputState {
             left_click: self.get_click_pos(MouseButton::Left),
             right_click: self.get_click_pos(MouseButton::Right),
-            now_keys: self.now_keys,
+            // now_keys: self.now_keys,
         }
     }
 }
